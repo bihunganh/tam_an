@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../core/constants/app_colors.dart';
+import '../widgets/custom_app_bar.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -23,39 +24,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: const CustomAppBar(),
       body: SafeArea(
         // --- SỬA Ở ĐÂY: Dùng ListView thay vì Column ---
         // ListView cho phép cuộn toàn bộ nội dung bên trong nó
         child: ListView(
           padding: const EdgeInsets.only(bottom: 20), // Padding đáy để không sát viền
           children: [
-            // 1. Header (Logo & Avatar)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'A n T â m',
-                    style: TextStyle(
-                      color: Color(0xFFCCCCCC),
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 4.0,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.transparent,
-                    ),
-                    child: const Icon(Icons.person, color: Color(0xFFCCCCCC), size: 28),
-                  ),
-                ],
-              ),
-            ),
-
             // 2. Lịch
             _buildCalendar(),
 

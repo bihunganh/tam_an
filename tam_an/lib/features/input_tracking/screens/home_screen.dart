@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import 'check_in_screen.dart';
+import '../../../main_screen.dart';
+import '../widgets/custom_app_bar.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,39 +10,14 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: const CustomAppBar(),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 1. Header: Logo "A n T â m" và Icon User
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'A n T â m',
-                    style: TextStyle(
-                      color: Color(0xFFCCCCCC), // Màu xám trắng
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900, // Chữ rất đậm
-                      letterSpacing: 4.0, // Kéo giãn khoảng cách chữ
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.transparent,
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Color(0xFFCCCCCC),
-                      size: 28,
-                    ),
-                  ),
-                ],
-              ),
+              // --- HEADER ĐÃ DỌN BỎKHOẢNG ---
 
               const Spacer(flex: 1), // Đẩy nội dung xuống giữa
               // 2. Lời chào
@@ -70,7 +46,16 @@ class HomeScreen extends StatelessWidget {
               // 3. NÚT CHECK-IN KHỔNG LỒ (Phát sáng)
               GestureDetector(
                 onTap: () {
-                  Navigator.pop(context);
+                  // Điều hướng đến màn hình check-in với navbar
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(
+                        showNavBar: true,
+                        initialIndex: 0, // Bắt đầu ở tab Check-in
+                      ),
+                    ),
+                  );
                 },
                 child: Container(
                   width: 220, // Kích thước vòng tròn
@@ -138,7 +123,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // Widget con để vẽ icon mặt cười cho gọn code
-  Widget _buildEmojiIcon(IconData icon) {
+  static Widget _buildEmojiIcon(IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Icon(
@@ -149,3 +134,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+

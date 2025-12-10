@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../widgets/custom_app_bar.dart';
 import 'check_in_overlay.dart';
 import 'home_screen.dart'; 
 
@@ -10,6 +11,7 @@ class CheckInScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: const CustomAppBar(),
       // 1. Dùng SingleChildScrollView để cuộn toàn bộ màn hình
       body: SafeArea(
         child: SingleChildScrollView(
@@ -20,35 +22,7 @@ class CheckInScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // --- PHẦN HEADER (Logo & Avatar) ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'A n T â m',
-                      style: TextStyle(
-                        color: Color(0xFFCCCCCC),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 4.0,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.transparent,
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Color(0xFFCCCCCC),
-                        size: 28,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
+                // --- PHẦN HEADER ĐÃ CHUYỂN LÊN APPBAR, BỎ HEADER HEADER (Logo & Avatar) ---
 
                 // --- NÚT BACK & TIÊU ĐỀ ---
                 Align(
