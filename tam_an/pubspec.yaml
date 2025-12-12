@@ -33,7 +33,7 @@ dependencies:
   google_fonts: ^6.3.3
   sqflite: ^2.2.8+4
   phosphor_flutter: ^2.0.0 # Bộ icon đẹp, nét mảnh (Minimalist)
-  table_calendar: ^3.0.9  
+
   # 2. Xử lý ngày tháng
   intl: ^0.18.0
 
