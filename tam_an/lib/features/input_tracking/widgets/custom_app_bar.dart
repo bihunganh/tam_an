@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../auth_system/screens/sign_in.dart';
+// Use named routes for navigation to avoid circular imports
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
@@ -69,10 +69,12 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   void _navigateToLogin() {
     _removeOverlay();
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-    );
+    Navigator.pushNamed(context, '/login');
+  }
+
+  void _navigateToSignup() {
+    _removeOverlay();
+    Navigator.pushNamed(context, '/signup');
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -154,14 +156,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           ),
                           InkWell(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Tính năng đăng ký sẽ ra mắt sớm'),
-                                ),
-                              );
-                              _removeOverlay();
-                            },
+                            onTap: _navigateToSignup,
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
@@ -209,13 +204,19 @@ class _CustomAppBarState extends State<CustomAppBar>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Logo và tên ứng dụng
-              const Text(
-                'A n T â m',
-                style: TextStyle(
-                  color: Color(0xFFCCCCCC),
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 4.0,
+              GestureDetector(
+                onTap: () {
+                  _removeOverlay();
+                  Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+                },
+                child: const Text(
+                  'T â m A n',
+                  style: TextStyle(
+                    color: Color(0xFFCCCCCC),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4.0,
+                  ),
                 ),
               ),
               // Icon User với chức năng toggle dropdown
