@@ -1,0 +1,352 @@
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../input_tracking/widgets/custom_app_bar.dart';
+
+class AnalysisScreen extends StatefulWidget {
+  const AnalysisScreen({super.key});
+
+  @override
+  State<AnalysisScreen> createState() => _AnalysisScreenState();
+}
+
+class _AnalysisScreenState extends State<AnalysisScreen> {
+  // Danh sách thời gian lọc
+  final List<String> timeRanges = ['7 ngày qua', '14 ngày qua', '30 ngày qua'];
+  String selectedTimeRange = '7 ngày qua';
+
+  // Dữ liệu tâm trạng theo ngày (7 ngày)
+  final List<double> moodData = [6.0, 4.5, 5.5, 3.5, 5.0, 4.0, 6.5];
+  final List<String> dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: const CustomAppBar(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header với tiêu đề
+              const Text(
+                'Thống kê',
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Card chứa biểu đồ
+              _buildChartCard(),
+              const SizedBox(height: 20),
+
+              // Card chứa tip và suggestion
+              _buildTipCard(),
+              const SizedBox(height: 20),
+
+              // Tiêu đề "Người dùng nhạng hàng hàng đầu"
+              const Text(
+                'NGƯỜI DÙNG NHẠNG HÀNG HÀNG ĐẦU',
+                style: TextStyle(
+                  color: Color(0xFF999999),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Danh sách các hạng mục với progress bar
+              _buildCategoryItem('Công việc', 80, AppColors.moodGianDu),
+              const SizedBox(height: 16),
+              _buildCategoryItem('Code', 60, AppColors.moodBuon),
+              const SizedBox(height: 16),
+              _buildCategoryItem('Học bài', 40, AppColors.moodVui),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Widget tạo card chứa biểu đồ
+  Widget _buildChartCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Color(0xFF4A4A4A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề và dropdown lọc thời gian
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Phân Tích',
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Color(0xFF383838),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: DropdownButton<String>(
+                  value: selectedTimeRange,
+                  dropdownColor: Color(0xFF4A4A4A),
+                  underline: const SizedBox(),
+                  items: timeRanges.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          color: AppColors.textLight,
+                          fontSize: 12,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedTimeRange = newValue ?? '7 ngày qua';
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Biểu đồ đường
+          _buildLineChart(),
+        ],
+      ),
+    );
+  }
+
+  // Widget vẽ biểu đồ đường
+  Widget _buildLineChart() {
+    double chartHeight = 180;
+    double chartWidth = MediaQuery.of(context).size.width - 80;
+    double maxValue = 7.0;
+
+    // Tính toán các điểm dữ liệu trên đồ thị
+    List<Offset> points = [];
+    for (int i = 0; i < moodData.length; i++) {
+      double x = (chartWidth / (moodData.length - 1)) * i;
+      double y = chartHeight - (moodData[i] / maxValue * chartHeight);
+      points.add(Offset(x, y));
+    }
+
+    return Column(
+      children: [
+        // Khung chứa biểu đồ
+        Container(
+          height: chartHeight + 40,
+          color: Color(0xFF383838),
+          padding: const EdgeInsets.only(left: 40, right: 10, top: 10, bottom: 30),
+          child: CustomPaint(
+            painter: LineChartPainter(
+              points: points,
+              chartHeight: chartHeight,
+              chartWidth: chartWidth,
+            ),
+            size: Size(chartWidth, chartHeight),
+          ),
+        ),
+
+        // Nhãn các ngày dưới biểu đồ
+        Padding(
+          padding: const EdgeInsets.only(left: 40, right: 10, top: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: dayLabels
+                .map((day) => Text(
+                      day,
+                      style: const TextStyle(
+                        color: Color(0xFF999999),
+                        fontSize: 11,
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget tạo card tip/suggestion
+  Widget _buildTipCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color(0xFF4A4A4A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primaryYellow,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lightbulb,
+              color: Color(0xFF383838),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tâm ích nhân hiểu',
+                  style: TextStyle(
+                    color: AppColors.primaryYellow,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Bạn thường xuyên cảm thấy căng thẳng vào các buổi học\nHãp Team',
+                  style: TextStyle(
+                    color: Color(0xFFCCCCCC),
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget tạo hàng mục với progress bar
+  Widget _buildCategoryItem(String category, int percentage, Color barColor) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            category,
+            style: const TextStyle(
+              color: AppColors.textLight,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 8,
+              backgroundColor: Color(0xFF383838),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 35,
+          child: Text(
+            '$percentage%',
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: Color(0xFF999999),
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Custom Painter để vẽ biểu đồ đường
+class LineChartPainter extends CustomPainter {
+  final List<Offset> points;
+  final double chartHeight;
+  final double chartWidth;
+
+  LineChartPainter({
+    required this.points,
+    required this.chartHeight,
+    required this.chartWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+
+    // Vẽ lưới ngang (grid lines)
+    final gridPaint = Paint()
+      ..color = Color(0xFF555555)
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i <= 6; i++) {
+      double y = (chartHeight / 6) * i;
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(chartWidth, y),
+        gridPaint,
+      );
+    }
+
+    // Vẽ đường kết nối các điểm
+    final linePaint = Paint()
+      ..color = AppColors.primaryYellow
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      canvas.drawLine(points[i], points[i + 1], linePaint);
+    }
+
+    // Vẽ các điểm trên đồ thị
+    final dotPaint = Paint()
+      ..color = AppColors.primaryYellow
+      ..style = PaintingStyle.fill;
+
+    for (final point in points) {
+      canvas.drawCircle(point, 4, dotPaint);
+    }
+
+    // Vẽ viền điểm (ring)
+    final ringPaint = Paint()
+      ..color = AppColors.primaryYellow.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (final point in points) {
+      canvas.drawCircle(point, 7, ringPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(LineChartPainter oldDelegate) => false;
+}
