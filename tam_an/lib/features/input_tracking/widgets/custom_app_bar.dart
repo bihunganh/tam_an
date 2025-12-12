@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth_system/screens/sign_in.dart';
+import '../../auth_system/screens/signup_screen.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
@@ -72,6 +73,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
+
+  void _navigateToSignup() {
+    _removeOverlay();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SignUpScreen()),
     );
   }
 
@@ -154,14 +163,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           ),
                           InkWell(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Tính năng đăng ký sẽ ra mắt sớm'),
-                                ),
-                              );
-                              _removeOverlay();
-                            },
+                            onTap: _navigateToSignup,
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
