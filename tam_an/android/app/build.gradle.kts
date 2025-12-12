@@ -7,8 +7,8 @@ plugins {
 
 android {
     namespace = "com.example.tam_an"
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
-    compileSdk = 34
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -24,10 +24,10 @@ android {
         applicationId = "com.example.tam_an"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        minSdk = 24  // Android 7.0 trở lên
-        targetSdk = 34
     }
 
     buildTypes {
