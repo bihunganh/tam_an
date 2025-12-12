@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Import để format ngày tháng
 import '../../../../core/constants/app_colors.dart';
 import 'sign_in.dart'; // Import màn hình Login
+import '../../input_tracking/widgets/custom_app_bar.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -58,6 +59,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      appBar: const CustomAppBar(),
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -68,25 +70,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 children: [
-                  const SizedBox(height: 20),
-                  // 1. Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'A n T â m',
-                        style: TextStyle(
-                          color: Color(0xFFCCCCCC),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 4.0,
-                        ),
-                      ),
-                      const Icon(Icons.person_add, color: Color(0xFFCCCCCC), size: 28),
-                    ],
-                  ),
-
-                  const SizedBox(height: 40), // Khoảng cách tới form
+                  const SizedBox(height: 8),
+                  const SizedBox(height: 32), // Khoảng cách tới form
 
                   // 2. FORM ĐĂNG KÝ (Stack)
                   Stack(

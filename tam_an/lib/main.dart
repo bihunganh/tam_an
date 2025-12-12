@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 // Import các file bạn đã tạo theo đúng cấu trúc thư mục
 import 'core/constants/app_colors.dart';
 import 'main_screen.dart';
+import 'features/auth_system/screens/sign_in.dart';
+import 'features/auth_system/screens/signup_screen.dart';
 
 void main() {
   // Đặt màu cho thanh trạng thái (Status Bar) của điện thoại để hòa vào nền ứng dụng
@@ -34,6 +36,11 @@ class TamAnApp extends StatelessWidget {
 
       // Màn hình đầu tiên hiện ra khi mở App
       home: const MainScreen(),
+      routes: {
+        '/home': (context) => const MainScreen(showNavBar: false),
+        '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignUpScreen(),
+      },
     );
   }
 }
