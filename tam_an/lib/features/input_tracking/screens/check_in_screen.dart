@@ -12,7 +12,7 @@ class CheckInScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const CustomAppBar(),
-      // 1. Dùng SingleChildScrollView để cuộn toàn bộ màn hình
+      
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -22,8 +22,6 @@ class CheckInScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // --- PHẦN HEADER ĐÃ CHUYỂN LÊN APPBAR, BỎ HEADER HEADER (Logo & Avatar) ---
-
                 // --- NÚT BACK & TIÊU ĐỀ ---
                 Align(
                   alignment: Alignment.center,
@@ -68,12 +66,11 @@ class CheckInScreen extends StatelessWidget {
 
                 const SizedBox(height: 30),
 
-                // --- GRID NÚT BẤM (Đã sửa đổi) ---
-                // Không dùng Expanded nữa, cho GridView tự tính chiều cao
+                // --- GRID NÚT BẤM  ---
                 GridView.count(
-                  shrinkWrap: true, // Quan trọng: Co gọn lại vừa đủ nội dung
+                  shrinkWrap: true, 
                   physics:
-                      const NeverScrollableScrollPhysics(), // Quan trọng: Tắt cuộn riêng của Grid
+                      const NeverScrollableScrollPhysics(), // Tắt cuộn riêng của Grid
                   crossAxisCount: 2,
                   childAspectRatio: 2.5,
                   mainAxisSpacing: 16,
@@ -119,8 +116,8 @@ class CheckInScreen extends StatelessWidget {
         // Hàm gọi Overlay Bottom Sheet
         showModalBottomSheet(
           context: context,
-          isScrollControlled: true, // Cho phép overlay full chiều cao nội dung
-          backgroundColor: Colors.transparent, // Để bo góc đẹp
+          isScrollControlled: true, 
+          backgroundColor: Colors.transparent, 
           builder: (context) => const CheckInOverlay(),
         );
       },

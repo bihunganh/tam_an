@@ -10,11 +10,14 @@ import 'features/analytics/screens/analysis_screen.dart';
 class MainScreen extends StatefulWidget {
   final bool showNavBar;
   final int initialIndex;
+  final bool showLoginSuccess;
+  
 
   const MainScreen({
     super.key,
     this.showNavBar = false,
     this.initialIndex = 0,
+    this.showLoginSuccess = false,
   });
 
   @override
@@ -37,6 +40,28 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.showLoginSuccess) {
+      // Dùng addPostFrameCallback để đảm bảo giao diện vẽ xong mới hiện thông báo
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 10),
+                Text("Đăng nhập thành công!"),
+              ],
+            ),
+            backgroundColor: Colors.green, // Màu xanh lá báo thành công
+            behavior: SnackBarBehavior.floating, // Nổi lên cho đẹp
+            duration: const Duration(seconds: 3),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(10),
+          ),
+        );
+      });
+    }
     _selectedIndex = widget.initialIndex;
   }
 
