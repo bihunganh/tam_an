@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../core/constants/app_colors.dart';
-import '../widgets/custom_app_bar.dart';
+// Đã xóa import custom_app_bar vì không cần dùng nữa
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -22,69 +22,68 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(),
-      body: SafeArea(
-        // --- SỬA Ở ĐÂY: Dùng ListView thay vì Column ---
-        // ListView cho phép cuộn toàn bộ nội dung bên trong nó
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: 20), // Padding đáy để không sát viền
-          children: [
-            // 2. Lịch
-            _buildCalendar(),
+    // --- SỬA LẠI: Dùng Container thay vì Scaffold ---
+    return Container(
+      color: AppColors.background,
+      // Bỏ SafeArea luôn vì MainScreen đã lo việc đó
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 20),
+        children: [
+          // 2. Lịch
+          _buildCalendar(),
 
-            const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-            // 3. Tiêu đề danh sách
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20), // Thêm padding cho thẳng hàng
-              child: Text(
-                "Nhật ký ngày ${_selectedDay?.day}",
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          // 3. Tiêu đề danh sách
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              "Nhật ký ngày ${_selectedDay?.day}",
+              style: const TextStyle(
+                color: Colors.white, 
+                fontSize: 16, 
+                fontWeight: FontWeight.bold
               ),
             ),
+          ),
 
-            const SizedBox(height: 10),
+          const SizedBox(height: 10),
 
-            // 4. Danh sách Nhật ký (Bỏ Expanded, viết thẳng item vào đây)
-            // Item 1
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHistoryItem(
-                time: "14:30",
-                mood: "Căng Thẳng",
-                moodColor: AppColors.moodCangThang,
-                tags: ["Công ty", "Họp", "Đồng nghiệp"],
-              ),
+          // 4. Danh sách Nhật ký
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildHistoryItem(
+              time: "14:30",
+              mood: "Căng Thẳng",
+              moodColor: AppColors.moodCangThang,
+              tags: ["Công ty", "Họp", "Đồng nghiệp"],
             ),
+          ),
 
-            const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-            // Item 2
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHistoryItem(
-                time: "18:00",
-                mood: "Tức giận",
-                moodColor: AppColors.moodGianDu,
-                tags: ["Ở Nhà", "Code", "Một Mình"],
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildHistoryItem(
+              time: "18:00",
+              mood: "Tức giận",
+              moodColor: AppColors.moodGianDu,
+              tags: ["Ở Nhà", "Code", "Một Mình"],
             ),
-            
-            // Bạn có thể thêm nhiều item nữa ở đây, màn hình sẽ tự dài ra và cuộn được
-            const SizedBox(height: 16),
-             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildHistoryItem(
-                time: "20:00",
-                mood: "Vui vẻ",
-                moodColor: AppColors.moodVui,
-                tags: ["Ăn tối", "Gia đình"],
-              ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildHistoryItem(
+              time: "20:00",
+              mood: "Vui vẻ",
+              moodColor: AppColors.moodVui,
+              tags: ["Ăn tối", "Gia đình"],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

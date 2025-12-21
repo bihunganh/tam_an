@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart'; 
+import 'firebase_options.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-// Import các file bạn đã tạo theo đúng cấu trúc thư mục
+import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
 import 'main_screen.dart';
+import 'core/providers/user_provider.dart';
 import 'features/auth_system/screens/sign_in.dart';
 import 'features/auth_system/screens/signup_screen.dart';
 
-void main() {
-  // Đặt màu cho thanh trạng thái (Status Bar) của điện thoại để hòa vào nền ứng dụng
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent, // Làm trong suốt thanh trạng thái
-    statusBarIconBrightness: Brightness.light, // Icon pin/sóng màu trắng
-  ));
+void main() async {
 
-  runApp(const TamAnApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  
+
+  await initializeDateFormatting();
+
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => UserProvider()..loadUser(),
+      child: const TamAnApp(),
+    ),
+  );
 }
 
 class TamAnApp extends StatelessWidget {
