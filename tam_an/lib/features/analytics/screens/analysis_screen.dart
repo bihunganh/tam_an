@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../input_tracking/widgets/custom_app_bar.dart';
+// Đã xóa import custom_app_bar
 
 class AnalysisScreen extends StatefulWidget {
   const AnalysisScreen({super.key});
@@ -14,78 +14,77 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   final List<String> timeRanges = ['7 ngày qua', '14 ngày qua', '30 ngày qua'];
   String selectedTimeRange = '7 ngày qua';
 
-  // Dữ liệu tâm trạng theo ngày (7 ngày)
+  // Dữ liệu tâm trạng
   final List<double> moodData = [6.0, 4.5, 5.5, 3.5, 5.0, 4.0, 6.5];
   final List<String> dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header với tiêu đề
-              const Text(
-                'Thống kê',
-                style: TextStyle(
-                  color: AppColors.textLight,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+    // --- SỬA LẠI: Dùng Container thay vì Scaffold ---
+    return Container(
+      color: AppColors.background,
+      // Bỏ SafeArea vì MainScreen đã có
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header với tiêu đề
+            const Text(
+              'Thống kê',
+              style: TextStyle(
+                color: AppColors.textLight,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
 
-              // Card chứa biểu đồ
-              _buildChartCard(),
-              const SizedBox(height: 20),
+            // Card chứa biểu đồ
+            _buildChartCard(),
+            const SizedBox(height: 20),
 
-              // Card chứa tip và suggestion
-              _buildTipCard(),
-              const SizedBox(height: 20),
+            // Card chứa tip và suggestion
+            _buildTipCard(),
+            const SizedBox(height: 20),
 
-              // Tiêu đề "Người dùng nhạng hàng hàng đầu"
-              const Text(
-                'NGƯỜI DÙNG NHẠNG HÀNG HÀNG ĐẦU',
-                style: TextStyle(
-                  color: Color(0xFF999999),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
+            // Tiêu đề "Người dùng..."
+            const Text(
+              'NGƯỜI DÙNG NHẠNG HÀNG HÀNG ĐẦU',
+              style: TextStyle(
+                color: Color(0xFF999999),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 12),
 
-              // Danh sách các hạng mục với progress bar
-              _buildCategoryItem('Công việc', 80, AppColors.moodGianDu),
-              const SizedBox(height: 16),
-              _buildCategoryItem('Code', 60, AppColors.moodBuon),
-              const SizedBox(height: 16),
-              _buildCategoryItem('Học bài', 40, AppColors.moodVui),
-              const SizedBox(height: 30),
-            ],
-          ),
+            // Danh sách các hạng mục
+            _buildCategoryItem('Công việc', 80, AppColors.moodGianDu),
+            const SizedBox(height: 16),
+            _buildCategoryItem('Code', 60, AppColors.moodBuon),
+            const SizedBox(height: 16),
+            _buildCategoryItem('Học bài', 40, AppColors.moodVui),
+            const SizedBox(height: 30),
+          ],
         ),
       ),
     );
   }
 
-  // Widget tạo card chứa biểu đồ
+  // --- Các Widget con giữ nguyên logic ---
+
   Widget _buildChartCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Color(0xFF4A4A4A),
+        color: const Color(0xFF4A4A4A),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tiêu đề và dropdown lọc thời gian
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -100,12 +99,12 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Color(0xFF383838),
+                  color: const Color(0xFF383838),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: DropdownButton<String>(
                   value: selectedTimeRange,
-                  dropdownColor: Color(0xFF4A4A4A),
+                  dropdownColor: const Color(0xFF4A4A4A),
                   underline: const SizedBox(),
                   items: timeRanges.map((String value) {
                     return DropdownMenuItem<String>(
@@ -129,21 +128,17 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             ],
           ),
           const SizedBox(height: 20),
-
-          // Biểu đồ đường
           _buildLineChart(),
         ],
       ),
     );
   }
 
-  // Widget vẽ biểu đồ đường
   Widget _buildLineChart() {
     double chartHeight = 180;
     double chartWidth = MediaQuery.of(context).size.width - 80;
     double maxValue = 7.0;
 
-    // Tính toán các điểm dữ liệu trên đồ thị
     List<Offset> points = [];
     for (int i = 0; i < moodData.length; i++) {
       double x = (chartWidth / (moodData.length - 1)) * i;
@@ -153,10 +148,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
     return Column(
       children: [
-        // Khung chứa biểu đồ
         Container(
           height: chartHeight + 40,
-          color: Color(0xFF383838),
+          color: const Color(0xFF383838),
           padding: const EdgeInsets.only(left: 40, right: 10, top: 10, bottom: 30),
           child: CustomPaint(
             painter: LineChartPainter(
@@ -167,8 +161,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             size: Size(chartWidth, chartHeight),
           ),
         ),
-
-        // Nhãn các ngày dưới biểu đồ
         Padding(
           padding: const EdgeInsets.only(left: 40, right: 10, top: 8),
           child: Row(
@@ -188,12 +180,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
-  // Widget tạo card tip/suggestion
   Widget _buildTipCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Color(0xFF4A4A4A),
+        color: const Color(0xFF4A4A4A),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -201,7 +192,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primaryYellow,
               shape: BoxShape.circle,
             ),
@@ -212,11 +203,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tâm ích nhân hiểu',
                   style: TextStyle(
                     color: AppColors.primaryYellow,
@@ -224,9 +215,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Bạn thường xuyên cảm thấy căng thẳng vào các buổi học\nHãp Team',
+                SizedBox(height: 4),
+                Text(
+                  'Bạn thường xuyên cảm thấy căng thẳng vào các buổi học\nHãy thả lỏng cơ thể.',
                   style: TextStyle(
                     color: Color(0xFFCCCCCC),
                     fontSize: 11,
@@ -241,7 +232,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
-  // Widget tạo hàng mục với progress bar
   Widget _buildCategoryItem(String category, int percentage, Color barColor) {
     return Row(
       children: [
@@ -262,7 +252,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             child: LinearProgressIndicator(
               value: percentage / 100,
               minHeight: 8,
-              backgroundColor: Color(0xFF383838),
+              backgroundColor: const Color(0xFF383838),
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),
@@ -284,7 +274,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   }
 }
 
-// Custom Painter để vẽ biểu đồ đường
+// --- Custom Painter giữ nguyên ---
 class LineChartPainter extends CustomPainter {
   final List<Offset> points;
   final double chartHeight;
@@ -300,9 +290,8 @@ class LineChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty) return;
 
-    // Vẽ lưới ngang (grid lines)
     final gridPaint = Paint()
-      ..color = Color(0xFF555555)
+      ..color = const Color(0xFF555555)
       ..strokeWidth = 0.5
       ..style = PaintingStyle.stroke;
 
@@ -315,7 +304,6 @@ class LineChartPainter extends CustomPainter {
       );
     }
 
-    // Vẽ đường kết nối các điểm
     final linePaint = Paint()
       ..color = AppColors.primaryYellow
       ..strokeWidth = 2.5
@@ -327,7 +315,6 @@ class LineChartPainter extends CustomPainter {
       canvas.drawLine(points[i], points[i + 1], linePaint);
     }
 
-    // Vẽ các điểm trên đồ thị
     final dotPaint = Paint()
       ..color = AppColors.primaryYellow
       ..style = PaintingStyle.fill;
@@ -336,7 +323,6 @@ class LineChartPainter extends CustomPainter {
       canvas.drawCircle(point, 4, dotPaint);
     }
 
-    // Vẽ viền điểm (ring)
     final ringPaint = Paint()
       ..color = AppColors.primaryYellow.withOpacity(0.3)
       ..style = PaintingStyle.stroke

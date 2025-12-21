@@ -4,8 +4,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
 import 'main_screen.dart';
+import 'core/providers/user_provider.dart';
 import 'features/auth_system/screens/sign_in.dart';
 import 'features/auth_system/screens/signup_screen.dart';
 
@@ -21,7 +23,12 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const TamAnApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => UserProvider()..loadUser(),
+      child: const TamAnApp(),
+    ),
+  );
 }
 
 class TamAnApp extends StatelessWidget {

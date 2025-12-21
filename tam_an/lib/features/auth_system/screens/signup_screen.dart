@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Import để format ngày tháng
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'sign_in.dart'; // Import màn hình Login
 import '../../input_tracking/widgets/custom_app_bar.dart';
@@ -23,6 +26,58 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   // 2. Biến lưu giới tính đang chọn (Mặc định là Nam)
   String _selectedGender = "Nam";
+
+  // Avatar bytes + base64 để lưu lên Firestore
+  Uint8List? _avatarBytes;
+  String? _avatarBase64;
+
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? file = await _picker.pickImage(source: source, maxWidth: 800, imageQuality: 85);
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _avatarBytes = bytes;
+        _avatarBase64 = base64Encode(bytes);
+      });
+    } catch (e) {
+      // Không block, chỉ log
+      // ignore: avoid_print
+      print('Error picking image: $e');
+    }
+  }
+
+  void _showImageSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2A2A2A),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.primaryYellow),
+              title: const Text('Chọn từ thư viện', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primaryYellow),
+              title: const Text('Chụp ảnh', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   // 3. Hàm hiển thị lịch để chọn ngày sinh
   Future<void> _selectDate(BuildContext context) async {
@@ -226,6 +281,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     username: username,
                                     dob: dob,
                                     gender: _selectedGender,
+                                    avatarBytes: _avatarBytes,
                                   );
 
                                   // 5. Tắt vòng tròn loading
@@ -390,31 +446,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // --- LỚP TRÊN: AVATAR TRÒN TO ---
                       Positioned(
                         top: 0,
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2A2A2A),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(8),
+                        child: GestureDetector(
+                          onTap: _showImageSourceSheet,
                           child: Container(
-                            decoration: const BoxDecoration(
-                              color: AppColors.primaryYellow,
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2A2A2A),
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
                             ),
-                            child: const Icon(
-                              Icons
-                                  .person_add_alt_1, // Icon khác login một chút
-                              size: 50,
-                              color: Color(0xFF2A2A2A),
+                            padding: const EdgeInsets.all(8),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: AppColors.primaryYellow,
+                                shape: BoxShape.circle,
+                              ),
+                              child: _avatarBytes != null
+                                  ? CircleAvatar(
+                                      radius: 40,
+                                      backgroundColor: AppColors.primaryYellow,
+                                      backgroundImage: MemoryImage(_avatarBytes!),
+                                    )
+                                  : const Icon(
+                                      Icons.person_add_alt_1, // Icon khác login một chút
+                                      size: 50,
+                                      color: Color(0xFF2A2A2A),
+                                    ),
                             ),
                           ),
                         ),

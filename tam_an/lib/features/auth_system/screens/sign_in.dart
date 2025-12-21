@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/services/auth_service.dart'; // Import Service
+import '../../../../core/services/auth_service.dart';
 import '../../../../main_screen.dart'; 
 import '../../input_tracking/widgets/custom_app_bar.dart';
+import 'signup_screen.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,11 +13,21 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // 1. Controller để lấy dữ liệu nhập
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // 2. Hàm xử lý Đăng Nhập
+  // Hàm điều hướng về Home (Dùng chung cho cả Logo và Nút Back)
+  void _navigateToHome() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        // showNavBar: false để về màn hình chào mừng (Home Screen)
+        builder: (context) => const MainScreen(showNavBar: false), 
+      ),
+      (route) => false, // Xóa hết lịch sử trước đó
+    );
+  }
+
   void _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -38,8 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return; 
     }
 
-
-    // Hiện Loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -48,15 +57,12 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    // Gọi Service
     final authService = AuthService();
     String? error = await authService.signIn(email: email, password: password);
 
-    // Tắt Loading
     if (context.mounted) Navigator.pop(context);
 
     if (error == null) {
-      // THÀNH CÔNG -> Vào màn hình chính
       if (context.mounted) {
         Navigator.pushReplacement(
           context,
@@ -64,7 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      // THẤT BẠI -> Hiện lỗi
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -90,15 +95,40 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(),
+      
+      // 1. SỬA APPBAR: Truyền hàm quay về Home vào onLogoTap
+      appBar: CustomAppBar(
+        onLogoTap: _navigateToHome,
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           child: SizedBox(
-            height: size.height - 50,
+            // Đảm bảo chiều cao tối thiểu để không bị lỗi layout khi bàn phím hiện
+            height: size.height - 80, 
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 children: [
+                  const SizedBox(height: 10),
+
+                  // 2. NÚT BACK CHUYÊN NGHIỆP HƠN (Đặt ở góc trái trên)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _navigateToHome,
+                      icon: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white70),
+                      label: const Text(
+                        "Về trang chủ",
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        alignment: Alignment.centerLeft,
+                      ),
+                    ),
+                  ),
+
                   const Spacer(),
 
                   // FORM ĐĂNG NHẬP
@@ -124,7 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Input Email (Đã sửa từ username sang email cho đúng chuẩn Firebase)
                             _buildTextField(
                               controller: _emailController,
                               hint: "Email",
@@ -132,7 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
                             
-                            // Input Mật khẩu
                             _buildTextField(
                               controller: _passwordController,
                               hint: "Mật Khẩu", 
@@ -146,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: _handleLogin, // Gọi hàm xử lý
+                                onPressed: _handleLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primaryYellow,
                                   foregroundColor: Colors.black,
@@ -161,19 +189,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-
-                            const SizedBox(height: 16),
-
-                            // Nút Quay lại
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: IconButton(
-                                icon: const Icon(Icons.undo, color: Colors.white70),
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            ),
+                            
+                            // Đã xóa nút Undo cũ ở đây đi
                           ],
                         ),
                       ),
@@ -211,8 +228,40 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
+                  
+                  const SizedBox(height: 20),
 
-                  const Spacer(flex: 2),
+                  // 3. THÊM DÒNG: "CHƯA CÓ TÀI KHOẢN? ĐĂNG KÝ"
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Bạn chưa có tài khoản? ",
+                        style: TextStyle(color: Colors.white54, fontSize: 14),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          // Chuyển sang màn hình Đăng ký
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                          );
+                        },
+                        child: const Text(
+                          "Đăng ký ngay",
+                          style: TextStyle(
+                            color: AppColors.primaryYellow,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primaryYellow,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(flex: 3),
                 ],
               ),
             ),
@@ -229,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
     IconData? icon,
   }) {
     return TextField(
-      controller: controller, // Gắn controller
+      controller: controller,
       obscureText: isPassword,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
