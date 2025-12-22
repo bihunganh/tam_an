@@ -102,7 +102,10 @@ class CheckInScreen extends StatelessWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => const CheckInOverlay(),
+          builder: (context) => CheckInOverlay(
+            moodLabel: text,
+            moodLevel: text == 'VUI' || text == 'HẠNH PHÚC' ? 5 : (text == 'BÌNH THƯỜNG' ? 3 : 1),
+          ),
         );
       },
       child: Container(

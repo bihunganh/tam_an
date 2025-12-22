@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../../data/models/checkin_model.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/checkin_service.dart'; // Import Service
 
 class CheckInOverlay extends StatefulWidget {
-  const CheckInOverlay({super.key});
+  // Nhận dữ liệu từ màn hình CheckInScreen truyền sang
+  final String moodLabel;
+  final int moodLevel;
+
+  const CheckInOverlay({
+    super.key, 
+    required this.moodLabel,
+    required this.moodLevel,
+  });
 
   @override
   State<CheckInOverlay> createState() => _CheckInOverlayState();
 }
 
 class _CheckInOverlayState extends State<CheckInOverlay> {
-  // Dữ liệu giả lập
+  // Dữ liệu giả lập (Tags)
   List<String> locations = ["Ở Nhà", "Ngoài đường", "Công ty"];
   List<String> activities = ["Họp", "Code", "Học Bài", "Lướt Web", "Nghỉ Ngơi", "Ăn uống"];
   List<String> people = ["Một Mình", "Bạn Bè", "Gia Đình", "Đồng nghiệp"];
@@ -18,9 +29,73 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
   String? selectedLocation;
   String? selectedActivity;
   String? selectedPerson;
+  final TextEditingController _noteController = TextEditingController(); // Controller cho ghi chú
   
-  // Trạng thái chế độ chỉnh sửa
   bool _isEditing = false; 
+  bool _isLoading = false; // Trạng thái đang lưu
+
+  // Hàm xử lý Lưu Check-in
+  Future<void> _handleSaveCheckIn() async {
+    // 1. Lấy User hiện tại
+    final authService = AuthService();
+    final user = await authService.getCurrentUser();
+    
+    if (user == null) {
+      // Nếu chưa đăng nhập thì báo lỗi hoặc bắt đăng nhập
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng đăng nhập để lưu!")));
+      return;
+    }
+
+    setState(() => _isLoading = true); // Hiện loading
+
+    try {
+      // 2. Tạo đối tượng CheckInModel
+      // Gom các tag đã chọn vào danh sách
+      List<String> companions = selectedPerson != null ? [selectedPerson!] : [];
+      List<String> activityTags = selectedActivity != null ? [selectedActivity!] : [];
+
+      CheckInModel newCheckIn = CheckInModel(
+        id: '', // Firebase sẽ tự sinh ID, để trống ở đây cũng được
+        userId: user.uid,
+        timestamp: DateTime.now(),
+        moodLabel: widget.moodLabel,
+        moodLevel: widget.moodLevel,
+        location: selectedLocation ?? '',
+        companions: companions,
+        activities: activityTags,
+        note: _noteController.text.trim(),
+      );
+
+      // 3. Gọi Service để lưu
+      final checkInService = CheckInService();
+      await checkInService.addNewCheckIn(newCheckIn);
+
+      // 4. Thành công -> Đóng Overlay và báo tin vui
+      if (mounted) {
+        Navigator.pop(context); // Đóng BottomSheet
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 10),
+                Text("Đã lưu cảm xúc: ${widget.moodLabel}"),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      // Lỗi -> Báo lỗi
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +160,15 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- TIÊU ĐỀ CẢM XÚC ĐANG CHỌN ---
+                  Center(
+                    child: Text(
+                      "Cảm thấy ${widget.moodLabel}", 
+                      style: const TextStyle(color: AppColors.primaryYellow, fontSize: 20, fontWeight: FontWeight.bold)
+                    )
+                  ),
+                  const SizedBox(height: 20),
+
                   _buildSectionTitle('BẠN ĐANG Ở ĐÂU?', Icons.location_on, context),
                   const SizedBox(height: 10),
                   _buildTagGroup(locations, selectedLocation, (val) {
@@ -111,6 +195,7 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
 
                   if (!_isEditing)
                     TextField(
+                      controller: _noteController, // Gắn controller
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: 'Ghi chú thêm (tùy chọn)...',
@@ -132,7 +217,7 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: _isLoading ? null : _handleSaveCheckIn, // Chặn bấm khi đang loading
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryYellow,
                           foregroundColor: Colors.black,
@@ -141,10 +226,12 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Hoàn Tất',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
+                        child: _isLoading 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                          : const Text(
+                              'Hoàn Tất',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
                       ),
                     ),
                 ],
@@ -156,33 +243,20 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
     );
   }
 
+  // ... (Các Widget con _buildSectionTitle, _showTagDialog, _buildTagGroup giữ nguyên như cũ của bạn)
   Widget _buildSectionTitle(String title, IconData icon, BuildContext context) {
     return Row(
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
-          ),
-        ),
+        Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
         const SizedBox(width: 8),
         Icon(icon, color: Colors.white70, size: 14),
       ],
     );
   }
 
-  // --- HÀM CHUNG CHO CẢ THÊM VÀ SỬA TAG ---
-  // index: Truyền index nếu là Sửa, để null nếu là Thêm mới
   void _showTagDialog(List<String> list, {int? index}) {
-    // Nếu index != null -> Lấy tên cũ để sửa. Nếu null -> Tên rỗng để nhập mới
     final bool isEditing = index != null;
-    TextEditingController controller = TextEditingController(
-      text: isEditing ? list[index!] : "" 
-    );
-
+    TextEditingController controller = TextEditingController(text: isEditing ? list[index!] : "");
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -191,37 +265,20 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
         content: TextField(
           controller: controller,
           style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: isEditing ? "Nhập tên mới" : "Nhập tên tag...",
-            hintStyle: const TextStyle(color: Colors.white38),
-            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primaryYellow)),
-          ),
-          autofocus: true, // Tự động bật bàn phím
+          decoration: InputDecoration(hintText: isEditing ? "Nhập tên mới" : "Nhập tên tag...", hintStyle: const TextStyle(color: Colors.white38), enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)), focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primaryYellow))),
+          autofocus: true,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Hủy", style: TextStyle(color: Colors.white70)),
-          ),
-          TextButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              if (text.isNotEmpty) {
-                setState(() {
-                  if (isEditing) {
-                    // Sửa tag cũ
-                    list[index!] = text;
-                  } else {
-                    // Thêm tag mới vào cuối danh sách
-                    list.add(text);
-                  }
-                });
-              }
-              Navigator.pop(context);
-            },
-            child: const Text("Lưu", style: TextStyle(color: AppColors.primaryYellow, fontWeight: FontWeight.bold)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy", style: TextStyle(color: Colors.white70))),
+          TextButton(onPressed: () {
+            final text = controller.text.trim();
+            if (text.isNotEmpty) {
+              setState(() {
+                if (isEditing) { list[index!] = text; } else { list.add(text); }
+              });
+            }
+            Navigator.pop(context);
+          }, child: const Text("Lưu", style: TextStyle(color: AppColors.primaryYellow, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -229,96 +286,33 @@ class _CheckInOverlayState extends State<CheckInOverlay> {
 
   Widget _buildTagGroup(List<String> tags, String? selectedValue, Function(String) onSelect) {
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+      spacing: 12, runSpacing: 12,
       children: [
-        // Hiển thị các tag hiện có
         for (int i = 0; i < tags.length; i++) ...[
           Stack(
             clipBehavior: Clip.none,
             children: [
               GestureDetector(
                 onTap: () {
-                  if (_isEditing) {
-                    // Chế độ Sửa -> Mở dialog để sửa tên
-                    _showTagDialog(tags, index: i);
-                  } else {
-                    // Chế độ Chọn
-                    onSelect(tags[i]);
-                  }
+                  if (_isEditing) { _showTagDialog(tags, index: i); } else { onSelect(tags[i]); }
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: _isEditing 
-                        ? const Color(0xFF303030).withOpacity(0.5) 
-                        : (tags[i] == selectedValue ? Colors.white : const Color(0xFF303030)),
+                    color: _isEditing ? const Color(0xFF303030).withOpacity(0.5) : (tags[i] == selectedValue ? Colors.white : const Color(0xFF303030)),
                     borderRadius: BorderRadius.circular(20),
-                    border: _isEditing 
-                        ? Border.all(color: Colors.white24, style: BorderStyle.solid) 
-                        : null,
+                    border: _isEditing ? Border.all(color: Colors.white24, style: BorderStyle.solid) : null,
                   ),
-                  child: Text(
-                    tags[i],
-                    style: TextStyle(
-                      color: _isEditing 
-                          ? Colors.white70 
-                          : (tags[i] == selectedValue ? Colors.black : Colors.white),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
+                  child: Text(tags[i], style: TextStyle(color: _isEditing ? Colors.white70 : (tags[i] == selectedValue ? Colors.black : Colors.white), fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
               ),
-
-              // Nút Xóa (X)
-              if (_isEditing)
-                Positioned(
-                  top: -6,
-                  right: -6,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (selectedValue == tags[i]) {
-                          if (tags == locations) selectedLocation = null;
-                          if (tags == activities) selectedActivity = null;
-                          if (tags == people) selectedPerson = null;
-                        }
-                        tags.removeAt(i);
-                      });
-                    },
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF424242), width: 2),
-                      ),
-                      child: const Icon(Icons.close, size: 12, color: Colors.white),
-                    ),
-                  ),
-                ),
+              if (_isEditing) Positioned(top: -6, right: -6, child: GestureDetector(onTap: () { setState(() { if (selectedValue == tags[i]) { if (tags == locations) selectedLocation = null; if (tags == activities) selectedActivity = null; if (tags == people) selectedPerson = null; } tags.removeAt(i); }); }, child: Container(width: 20, height: 20, decoration: BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle, border: Border.all(color: const Color(0xFF424242), width: 2)), child: const Icon(Icons.close, size: 12, color: Colors.white)))),
             ],
           )
         ],
-
-        // --- NÚT THÊM (+) ---
-        // Luôn hiển thị ở cuối danh sách
         GestureDetector(
-          onTap: () {
-            // Gọi hàm dialog nhưng KHÔNG truyền index -> Hiểu là Thêm mới
-            _showTagDialog(tags);
-          },
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFF303030),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.add, color: Colors.white70, size: 20),
-          ),
+          onTap: () { _showTagDialog(tags); },
+          child: Container(width: 36, height: 36, decoration: const BoxDecoration(color: Color(0xFF303030), shape: BoxShape.circle), child: const Icon(Icons.add, color: Colors.white70, size: 20)),
         ),
       ],
     );
