@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'check_in_overlay.dart';
-// Không cần import home_screen hay custom_app_bar nữa
 
 class CheckInScreen extends StatelessWidget {
   const CheckInScreen({super.key});
+
+  int _getMoodLevel(String moodText) {
+    switch (moodText) {
+      case 'HẠNH PHÚC': return 6;
+      case 'VUI': return 5;      
+      case 'BÌNH THƯỜNG': return 4;
+      case 'CĂNG THẲNG': return 3; 
+      case 'BUỒN': return 2;
+      case 'GIẬN DỮ': return 1;
+      default: return 4;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +44,12 @@ class CheckInScreen extends StatelessWidget {
               const Text(
                 'CHECK-IN',
                 style: TextStyle(
-                  color: AppColors.primaryYellow,
+                  color: AppColors.primaryBlue,
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
                   shadows: [
-                    Shadow(color: AppColors.primaryYellow, blurRadius: 15),
+                    Shadow(color: AppColors.primaryBlue, blurRadius: 15),
                   ],
                 ),
               ),
@@ -46,7 +57,7 @@ class CheckInScreen extends StatelessWidget {
               const Text(
                 'Bạn đang cảm thấy:',
                 style: TextStyle(
-                  color: AppColors.primaryYellow,
+                  color: AppColors.primaryBlue,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -63,12 +74,12 @@ class CheckInScreen extends StatelessWidget {
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 children: [
-                  _buildMoodButton('VUI', AppColors.moodVui, context),
-                  _buildMoodButton('BUỒN', AppColors.moodBuon, context),
-                  _buildMoodButton('BÌNH THƯỜNG', AppColors.moodBinhThuong, context),
-                  _buildMoodButton('GIẬN DỮ', AppColors.moodGianDu, context),
-                  _buildMoodButton('HẠNH PHÚC', AppColors.moodHanhPhuc, context),
-                  _buildMoodButton('CĂNG THẲNG', AppColors.moodCangThang, context),
+                  _buildMoodButton('VUI', AppColors.moodFun, context),
+                  _buildMoodButton('BUỒN', AppColors.moodSad, context),
+                  _buildMoodButton('BÌNH THƯỜNG', AppColors.moodNeutral, context),
+                  _buildMoodButton('GIẬN DỮ', AppColors.moodMad, context),
+                  _buildMoodButton('HẠNH PHÚC', AppColors.moodHappy, context),
+                  _buildMoodButton('CĂNG THẲNG', AppColors.moodAnxiety, context),
                 ],
               ),
 
@@ -104,7 +115,7 @@ class CheckInScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (context) => CheckInOverlay(
             moodLabel: text,
-            moodLevel: text == 'VUI' || text == 'HẠNH PHÚC' ? 5 : (text == 'BÌNH THƯỜNG' ? 3 : 1),
+            moodLevel: _getMoodLevel(text),
           ),
         );
       },
@@ -136,7 +147,7 @@ class CheckInScreen extends StatelessWidget {
   Widget _buildSmallIcon(IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6.0),
-      child: Icon(icon, color: AppColors.primaryYellow, size: 20),
+      child: Icon(icon, color: AppColors.primaryBlue, size: 20),
     );
   }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'core/constants/app_colors.dart';
+import 'core/navigation/app_router.dart';
 import 'core/services/auth_service.dart';
-import 'data/models/user_model.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import 'core/providers/user_provider.dart';
 import 'features/user_profile/screens/profile_screen.dart';
 import 'features/auth_system/screens/sign_in.dart';
@@ -71,23 +72,19 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF303030),
-        title: const Text("Đăng xuất", style: TextStyle(color: AppColors.primaryYellow)),
+        title: const Text("Đăng xuất", style: TextStyle(color: AppColors.primaryBlue)),
         content: const Text("Bạn có chắc chắn muốn đăng xuất không?", style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Hủy", style: TextStyle(color: Colors.white54)),
           ),
-          TextButton(
+              TextButton(
             onPressed: () async {
               Navigator.pop(context);
               await _authService.signOut();
               if (mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
+                AppRouter.pushAndRemoveUntil(context, const LoginScreen());
               }
             },
             child: const Text("Đồng ý", style: TextStyle(color: Colors.redAccent)),
@@ -113,7 +110,8 @@ class _MainScreenState extends State<MainScreen> {
     return PopupMenuButton<String>(
       onSelected: (value) {
         if (value == 'profile') {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(user: user)));
+              // smooth push
+              AppRouter.push(context, ProfileScreen(user: user));
         } else if (value == 'logout') {
           _handleLogout();
         }
@@ -123,7 +121,7 @@ class _MainScreenState extends State<MainScreen> {
       itemBuilder: (context) => [
         const PopupMenuItem(
           value: 'profile',
-          child: Row(children: [Icon(Icons.person, color: AppColors.primaryYellow), SizedBox(width: 10), Text("Hồ sơ cá nhân", style: TextStyle(color: Colors.white))]),
+          child: Row(children: [Icon(Icons.person, color: AppColors.primaryBlue), SizedBox(width: 10), Text("Hồ sơ cá nhân", style: TextStyle(color: Colors.white))]),
         ),
         const PopupMenuItem(
           value: 'logout',
@@ -135,7 +133,7 @@ class _MainScreenState extends State<MainScreen> {
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primaryYellow, width: 2),
+          border: Border.all(color: AppColors.primaryBlue, width: 2),
         ),
         child: CircleAvatar(
           radius: 16, // Nhỏ gọn vừa AppBar
@@ -206,7 +204,7 @@ class _MainScreenState extends State<MainScreen> {
         bottomNavigationBar: widget.showNavBar
             ? BottomNavigationBar(
                 backgroundColor: const Color(0xFF2B2B2B),
-                selectedItemColor: AppColors.primaryYellow,
+                selectedItemColor: AppColors.primaryBlue,
                 unselectedItemColor: Colors.white70,
                 showSelectedLabels: false,
                 showUnselectedLabels: false,
