@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/navigation/app_router.dart';
 import '../../../../data/models/user_model.dart'; // Import Model
 import '../../../../main_screen.dart';
 
@@ -41,15 +42,10 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 40), // Khoảng cách đến nút Check-in
           
           // --- NÚT CHECK-IN ---
-          GestureDetector(
+              GestureDetector(
             onTap: () {
-              // Chuyển sang giao diện Check-in (có Navbar)
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MainScreen(showNavBar: true),
-                ),
-              );
+              // Chuyển sang giao diện Check-in (có Navbar) - dùng AppRouter
+              AppRouter.push(context, const MainScreen(showNavBar: true));
             },
             child: Container(
               width: 200,
@@ -58,7 +54,7 @@ class HomeScreen extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primaryYellow.withOpacity(0.2),
+                    AppColors.primaryBlue.withOpacity(0.18),
                     Colors.transparent,
                   ],
                   begin: Alignment.topCenter,
@@ -66,27 +62,27 @@ class HomeScreen extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primaryYellow.withOpacity(0.1),
+                    color: AppColors.primaryBlue.withOpacity(0.08),
                     blurRadius: 30,
                     spreadRadius: 5,
                   )
                 ],
                 border: Border.all(
-                  color: AppColors.primaryYellow.withOpacity(0.5),
+                  color: AppColors.primaryBlue.withOpacity(0.45),
                   width: 2,
                 ),
               ),
               child: const Center(
-                child: Text(
+                  child: Text(
                   "CHECK-IN",
                   style: TextStyle(
-                    color: AppColors.primaryYellow,
+                    color: AppColors.primaryBlue,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
                     shadows: [
                       Shadow(
-                        color: AppColors.primaryYellow,
+                        color: AppColors.primaryBlue,
                         blurRadius: 10,
                       )
                     ],
@@ -120,7 +116,7 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Icon(
         icon,
-        color: AppColors.primaryYellow,
+        color: AppColors.primaryBlue,
         size: 30,
       ),
     );

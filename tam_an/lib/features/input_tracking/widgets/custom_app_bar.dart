@@ -57,7 +57,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   // ... (Giữ nguyên các hàm _showOverlay, _removeOverlay, _toggleDropdown, _createOverlayEntry cũ)
   void _showOverlay() {
     _overlayEntry = _createOverlayEntry();
-    Overlay.of(context)!.insert(_overlayEntry!);
+    Overlay.of(context).insert(_overlayEntry!);
     setState(() => _isDropdownOpen = true);
     _animationController.forward();
   }
@@ -153,7 +153,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                               ),
                               child: Row(
                                 children: const [
-                                  Icon(Icons.login, color: AppColors.primaryYellow, size: 18),
+                                  Icon(Icons.login, color: AppColors.primaryBlue, size: 18),
                                   SizedBox(width: 12),
                                   Text('Đăng nhập', style: TextStyle(color: AppColors.textLight, fontSize: 14, fontWeight: FontWeight.w500)),
                                 ],
@@ -167,7 +167,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                               child: Row(
                                 children: const [
-                                  Icon(Icons.person_add, color: AppColors.primaryYellow, size: 18),
+                                  Icon(Icons.person_add, color: AppColors.primaryBlue, size: 18),
                                   SizedBox(width: 12),
                                   Text('Đăng ký', style: TextStyle(color: AppColors.textLight, fontSize: 14, fontWeight: FontWeight.w500)),
                                 ],
@@ -208,13 +208,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                     // Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
                   }
                 },
-                child: const Text(
-                  'T â m A n',
-                  style: TextStyle(
-                    color: Color(0xFFCCCCCC),
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4.0,
+                child: GestureDetector(
+                  onTap: () {
+                    if (widget.onLogoTap != null) widget.onLogoTap!();
+                  },
+                  child: const Text(
+                    'T â m A n',
+                    style: TextStyle(
+                      color: Color(0xFFCCCCCC),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 4.0,
+                    ),
                   ),
                 ),
               ),
@@ -237,7 +242,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
                     child: Icon(
                       Icons.person,
-                      color: _isDropdownOpen ? AppColors.primaryYellow : const Color(0xFFCCCCCC),
+                      color: _isDropdownOpen ? AppColors.primaryBlue : const Color(0xFFCCCCCC),
                       size: 28,
                     ),
                   ),

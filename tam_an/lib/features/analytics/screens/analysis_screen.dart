@@ -61,11 +61,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             const SizedBox(height: 12),
 
             // Danh sách các hạng mục
-            _buildCategoryItem('Công việc', 80, AppColors.moodGianDu),
+              _buildCategoryItem('Công việc', 80, AppColors.moodMad),
             const SizedBox(height: 16),
-            _buildCategoryItem('Code', 60, AppColors.moodBuon),
+              _buildCategoryItem('Code', 60, AppColors.moodSad),
             const SizedBox(height: 16),
-            _buildCategoryItem('Học bài', 40, AppColors.moodVui),
+              _buildCategoryItem('Học bài', 40, AppColors.moodHappy),
             const SizedBox(height: 30),
           ],
         ),
@@ -193,7 +193,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             width: 40,
             height: 40,
             decoration: const BoxDecoration(
-              color: AppColors.primaryYellow,
+                color: AppColors.primaryBlue,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -210,7 +210,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 Text(
                   'Tâm ích nhân hiểu',
                   style: TextStyle(
-                    color: AppColors.primaryYellow,
+                        color: AppColors.primaryBlue,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -305,7 +305,7 @@ class LineChartPainter extends CustomPainter {
     }
 
     final linePaint = Paint()
-      ..color = AppColors.primaryYellow
+      ..color = AppColors.primaryBlue
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -316,7 +316,7 @@ class LineChartPainter extends CustomPainter {
     }
 
     final dotPaint = Paint()
-      ..color = AppColors.primaryYellow
+      ..color = AppColors.primaryBlue
       ..style = PaintingStyle.fill;
 
     for (final point in points) {
@@ -324,7 +324,7 @@ class LineChartPainter extends CustomPainter {
     }
 
     final ringPaint = Paint()
-      ..color = AppColors.primaryYellow.withOpacity(0.3)
+      ..color = AppColors.primaryBlue.withOpacity(0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 

@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Màu nền chính (Xám tối giống thiết kế)
-  static const Color background = Color(0xFF383838); 
-  
-  // Màu vàng chủ đạo (Text & Glow)
-  static const Color primaryYellow = Color(0xFFFDE047); // Màu vàng sáng
-  static const Color textLight = Color(0xFFE0E0E0); // Màu chữ trắng mờ
-  
-  // Màu nút bấm Check-in (Tối hơn nền)
-  static const Color buttonDark = Color(0xFF2A2A2A);
+  // Nền chính: gần như đen để có cảm giác tối chuyên nghiệp
+  static const Color background = Color(0xFF0B0B0C);
 
-  static const Color moodVui = Color(0xFFFFB74D);        // Cam
-  static const Color moodBuon = Color(0xFF64B5F6);       // Xanh dương
-  static const Color moodBinhThuong = Color(0xFF81C784); // Xanh lá
-  static const Color moodGianDu = Color(0xFFE57373);     // Đỏ hồng
-  static const Color moodHanhPhuc = Color(0xFF90A4AE);   // Xám xanh
-  static const Color moodCangThang = Color(0xFF9575CD);  // Tím
+  // Màu chủ đạo mới: Xanh dương (lấy cảm hứng từ tông Apple Health)
+  static const Color primaryBlue = Color(0xFF0A84FF); // Blue chính
+  static const Color primaryBlueLight = Color(0xFF5AC8FA); // Blue nhạt cho gradient / glow
+
+  // Văn bản và layer sáng
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textLight = Color(0xFFBFC8D8); // chữ trắng mờ hơi lạnh
+
+  // Màu nút nền tối
+  static const Color buttonDark = Color(0xFF111214);
+
+  // Màu trạng thái / thành công
+  static const Color successGreen = Color(0xFF34C759);
+
+  // Palette cảm xúc (đa sắc, lấy cảm hứng từ Apple Health)
+  static const Color moodMad = Color(0xFFFF3B30);    // Đỏ
+  static const Color moodSad = Color.fromARGB(255, 255, 0, 179);     // Hồng
+  static const Color moodNeutral = Color(0xFF5AC8FA);    // Xanh dương nhạt
+  static const Color moodHappy = Color(0xFF4CD964);      // Xanh lá
+  static const Color moodFun = Color(0xFFFF9500);       // Cam
+  static const Color moodAnxiety = Color(0xFFAF52DE);    // Tím
 }

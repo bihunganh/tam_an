@@ -40,12 +40,36 @@ class TamAnApp extends StatelessWidget {
       title: 'Tâm An', // Tên hiển thị khi đa nhiệm
       debugShowCheckedModeBanner: false, // Tắt chữ "Debug" đỏ ở góc phải
       
-      // Cấu hình Theme chung cho toàn app
+      // Cấu hình Theme chung cho toàn app (Dark + Blue accents)
       theme: ThemeData(
-        brightness: Brightness.dark, // Chế độ tối
-        scaffoldBackgroundColor: AppColors.background, // Màu nền mặc định lấy từ file constants
+        brightness: Brightness.dark,
         useMaterial3: true,
-        fontFamily: 'Roboto', // Bạn có thể đổi font khác nếu muốn
+        fontFamily: 'Roboto',
+        scaffoldBackgroundColor: AppColors.background,
+        colorScheme: const ColorScheme.dark(
+          primary: AppColors.primaryBlue,
+          secondary: AppColors.primaryBlueLight,
+          background: AppColors.background,
+          surface: Color(0xFF0F0F10),
+          onPrimary: Colors.white,
+          onBackground: Colors.white70,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          centerTitle: false,
+          titleTextStyle: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800),
+          iconTheme: IconThemeData(color: AppColors.textPrimary),
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Color(0xFF1B1B1C),
+          selectedItemColor: AppColors.primaryBlue,
+          unselectedItemColor: Colors.white70,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white, shape: const StadiumBorder()),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
 
       // Màn hình đầu tiên hiện ra khi mở App

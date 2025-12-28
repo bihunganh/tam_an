@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../main_screen.dart'; 
+import '../../../../core/navigation/app_router.dart';
 import '../../input_tracking/widgets/custom_app_bar.dart';
 import 'signup_screen.dart'; 
+import 'package:provider/provider.dart';
+import '../../../../core/providers/user_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,14 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Hàm điều hướng về Home (Dùng chung cho cả Logo và Nút Back)
   void _navigateToHome() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        // showNavBar: false để về màn hình chào mừng (Home Screen)
-        builder: (context) => const MainScreen(showNavBar: false), 
-      ),
-      (route) => false, // Xóa hết lịch sử trước đó
-    );
+    AppRouter.pushAndRemoveUntil(context, const MainScreen(showNavBar: false));
   }
 
   void _handleLogin() async {
@@ -53,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryYellow),
+        child: CircularProgressIndicator(color: AppColors.primaryBlue),
       ),
     );
 
@@ -62,12 +58,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (context.mounted) Navigator.pop(context);
 
-    if (error == null) {
+      if (error == null) {
       if (context.mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen(showLoginSuccess: true)),
-        );
+          // Load current user into provider so UI updates (avatar, profile, logout)
+          try {
+            Provider.of<UserProvider>(context, listen: false).loadUser();
+          } catch (_) {}
+
+          AppRouter.pushReplacement(context, const MainScreen(showLoginSuccess: true));
       }
     } else {
       if (context.mounted) {
@@ -176,8 +174,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: ElevatedButton(
                                 onPressed: _handleLogin,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryYellow,
-                                  foregroundColor: Colors.black,
+                                  backgroundColor: AppColors.primaryBlue,
+                                    foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(25),
                                   ),
@@ -213,9 +211,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           padding: const EdgeInsets.all(8),
-                          child: Container(
+                            child: Container(
                             decoration: const BoxDecoration(
-                              color: AppColors.primaryYellow,
+                              color: AppColors.primaryBlue,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -250,11 +248,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text(
                           "Đăng ký ngay",
                           style: TextStyle(
-                            color: AppColors.primaryYellow,
+                            color: AppColors.primaryBlue,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             decoration: TextDecoration.underline,
-                            decorationColor: AppColors.primaryYellow,
+                            decorationColor: AppColors.primaryBlue,
                           ),
                         ),
                       ),
@@ -294,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: AppColors.primaryYellow),
+          borderSide: const BorderSide(color: AppColors.primaryBlue),
         ),
       ),
     );

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class UserModel {
   final String uid;
   final String email;
@@ -13,6 +11,10 @@ class UserModel {
   final int currentStreak;
   final Map<String, int> moodCounts; 
 
+  final List<String> locationTags;
+  final List<String> activityTags;
+  final List<String> companionTags;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -20,6 +22,9 @@ class UserModel {
     required this.dob,
     required this.gender,
     this.avatarUrl,
+    this.locationTags = const [],
+    this.activityTags = const [],
+    this.companionTags = const [],
     this.totalCheckins = 0,
     this.currentStreak = 0,
     this.moodCounts = const {},
@@ -34,6 +39,9 @@ class UserModel {
       dob: data['dob'] ?? '',
       gender: data['gender'] ?? 'Khác',
       avatarUrl: data['avatarUrl'],
+      locationTags: List<String>.from(data['locationTags'] ?? []),
+      activityTags: List<String>.from(data['activityTags'] ?? []),
+      companionTags: List<String>.from(data['companionTags'] ?? []),
       totalCheckins: data['totalCheckins'] ?? 0,
       currentStreak: data['currentStreak'] ?? 0,
       moodCounts: Map<String, int>.from(data['moodCounts'] ?? {}),
@@ -49,6 +57,9 @@ class UserModel {
       'dob': dob,
       'gender': gender,
       'avatarUrl': avatarUrl,
+      'locationTags': locationTags,
+      'activityTags': activityTags,
+      'companionTags': companionTags,
       'totalCheckins': totalCheckins,
       'currentStreak': currentStreak,
       'moodCounts': moodCounts,

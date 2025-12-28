@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Import để format ngày tháng
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'sign_in.dart'; // Import màn hình Login
 import '../../input_tracking/widgets/custom_app_bar.dart';
 import '../../../../core/services/auth_service.dart';
-import '../../../../main_screen.dart';
+import '../../../../core/navigation/app_router.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -29,7 +28,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   // Avatar bytes + base64 để lưu lên Firestore
   Uint8List? _avatarBytes;
-  String? _avatarBase64;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -40,7 +38,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final bytes = await file.readAsBytes();
       setState(() {
         _avatarBytes = bytes;
-        _avatarBase64 = base64Encode(bytes);
       });
     } catch (e) {
       // Không block, chỉ log
@@ -58,7 +55,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.primaryYellow),
+              leading: const Icon(Icons.photo_library, color: AppColors.primaryBlue),
               title: const Text('Chọn từ thư viện', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
@@ -66,7 +63,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppColors.primaryYellow),
+              leading: const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
               title: const Text('Chụp ảnh', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
@@ -88,12 +85,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ), // Mặc định lùi về 18 năm trước
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      builder: (context, child) {
+        builder: (context, child) {
         // Custom màu cho lịch (Theme tối)
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: AppColors.primaryYellow, // Màu chọn
+              primary: AppColors.primaryBlue, // Màu chọn
               onPrimary: Colors.black, // Chữ trên màu chọn
               surface: Color(0xFF2A2A2A), // Nền lịch
               onSurface: Colors.white, // Chữ ngày tháng
@@ -115,7 +112,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     // Kích thước màn hình
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       appBar: const CustomAppBar(),
@@ -267,10 +263,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     context: context,
                                     barrierDismissible: false,
                                     builder: (context) => const Center(
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.primaryYellow,
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.primaryBlue,
+                                        ),
                                       ),
-                                    ),
                                   );
 
                                   // 4. Gọi Service Đăng Ký
@@ -308,21 +304,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               ),
                                             ),
                                             title: const Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.check_circle,
-                                                  color:
-                                                      AppColors.primaryYellow,
-                                                ),
-                                                SizedBox(width: 10),
-                                                Text(
-                                                  "Thành công!",
-                                                  style: TextStyle(
-                                                    color:
-                                                        AppColors.primaryYellow,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
+                                                      children: [
+                                                      Icon(
+                                                        Icons.check_circle,
+                                                        color:
+                                                            AppColors.primaryBlue,
+                                                      ),
+                                                      SizedBox(width: 10),
+                                                      Text(
+                                                        "Thành công!",
+                                                        style: TextStyle(
+                                                          color:
+                                                              AppColors.primaryBlue,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
                                               ],
                                             ),
                                             content: const Text(
@@ -342,19 +338,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                                       context,
                                                     ); // Đóng hộp thoại
                                                     // Chuyển sang màn hình Login
-                                                    Navigator.pushReplacement(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            const LoginScreen(),
-                                                      ),
-                                                    );
+                                                    AppRouter.pushReplacement(context, const LoginScreen());
                                                   },
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        AppColors.primaryYellow,
-                                                    foregroundColor:
-                                                        Colors.black,
+                                                      backgroundColor:
+                                                        AppColors.primaryBlue,
+                                                      foregroundColor:
+                                                        Colors.white,
                                                     shape: RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -392,8 +382,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryYellow,
-                                  foregroundColor: Colors.black,
+                                  backgroundColor: AppColors.primaryBlue,
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(25),
                                   ),
@@ -415,12 +405,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             TextButton(
                               onPressed: () {
                                 // Điều hướng về màn hình Login
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginScreen(),
-                                  ),
-                                );
+                                AppRouter.pushReplacement(context, const LoginScreen());
                               },
                               child: RichText(
                                 text: const TextSpan(
@@ -430,7 +415,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     TextSpan(
                                       text: 'Đăng nhập ngay',
                                       style: TextStyle(
-                                        color: AppColors.primaryYellow,
+                                          color: AppColors.primaryBlue,
                                         fontWeight: FontWeight.bold,
                                         decoration: TextDecoration.underline,
                                       ),
@@ -465,13 +450,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             padding: const EdgeInsets.all(8),
                             child: Container(
                               decoration: const BoxDecoration(
-                                color: AppColors.primaryYellow,
+                                color: AppColors.primaryBlue,
                                 shape: BoxShape.circle,
                               ),
                               child: _avatarBytes != null
                                   ? CircleAvatar(
                                       radius: 40,
-                                      backgroundColor: AppColors.primaryYellow,
+                                      backgroundColor: AppColors.primaryBlue,
                                       backgroundImage: MemoryImage(_avatarBytes!),
                                     )
                                   : const Icon(
@@ -533,7 +518,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: AppColors.primaryYellow),
+          borderSide: const BorderSide(color: AppColors.primaryBlue),
         ),
       ),
     );
@@ -551,10 +536,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryYellow : const Color(0xFF353535),
+          color: isSelected ? AppColors.primaryBlue : const Color(0xFF353535),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primaryYellow : Colors.white24,
+            color: isSelected ? AppColors.primaryBlue : Colors.white24,
           ),
         ),
         child: Text(

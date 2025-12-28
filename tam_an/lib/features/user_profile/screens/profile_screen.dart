@@ -3,9 +3,10 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/user_model.dart';
 import '../../../../core/services/auth_service.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
+// removed unused typed_data import
 import 'dart:convert';
 import 'package:provider/provider.dart';
+import '../../../../core/navigation/app_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../auth_system/screens/sign_in.dart';
 import '../../input_tracking/widgets/custom_app_bar.dart';
@@ -27,7 +28,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Local mutable copy of user to update UI after avatar change
   late UserModel _user;
 
-  Uint8List? _avatarBytes;
   String? _avatarBase64;
   bool _isEditing = false;
   late TextEditingController _usernameController;
@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF303030),
-        title: const Text("Đăng xuất", style: TextStyle(color: AppColors.primaryYellow)),
+        title: const Text("Đăng xuất", style: TextStyle(color: AppColors.primaryBlue)),
         content: const Text("Bạn có chắc chắn muốn đăng xuất không?", style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
@@ -49,17 +49,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text("Hủy", style: TextStyle(color: Colors.white54)),
           ),
           TextButton(
-            onPressed: () async {
+              onPressed: () async {
               Navigator.pop(context); // Đóng dialog
               await _authService.signOut(); // Gọi Firebase logout
               
               if (mounted) {
                 // Quay về màn hình Login, xóa hết lịch sử
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
+                AppRouter.pushAndRemoveUntil(context, const LoginScreen());
               }
             },
             child: const Text("Đồng ý", style: TextStyle(color: Colors.redAccent)),
@@ -76,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (value == 'logout') {
           _handleLogout();
         }
-        // Không cần case 'profile' vì đang ở trang profile rồi
+
       },
       color: const Color(0xFF353535),
       offset: const Offset(0, 50),
@@ -95,9 +91,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Icon đại diện
         child: Container(
         padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
+          decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primaryYellow, width: 2),
+          border: Border.all(color: AppColors.primaryBlue, width: 2),
         ),
         child: CircleAvatar(
           radius: 16,
@@ -131,13 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _avatarBase64 = _user.avatarUrl;
     _usernameController = TextEditingController(text: _user.username);
     _emailController = TextEditingController(text: _user.email);
-    if (_avatarBase64 != null && _avatarBase64!.isNotEmpty) {
-      try {
-        _avatarBytes = base64Decode(_avatarBase64!);
-      } catch (_) {
-        _avatarBytes = null;
-      }
-    }
+    // avatar bytes are not stored separately; use base64 string in _avatarBase64 if present
   }
 
   @override
@@ -159,7 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       String? err = await _authService.updateAvatarFromBytes(bytes);
       if (err == null) {
         setState(() {
-          _avatarBytes = bytes;
           _avatarBase64 = base64str;
           _user = UserModel(
             uid: _user.uid,
@@ -189,17 +178,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     final newName = _usernameController.text.trim();
-    final newEmail = _emailController.text.trim();
-    // Validate email format before saving
-    final emailRegex = RegExp(r"^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}");
-    if (newEmail.isNotEmpty && !emailRegex.hasMatch(newEmail)) {
-      setState(() {
-        _saveMessage = 'Email không hợp lệ, vui lòng nhập đúng định dạng.';
-        _saveMessageColor = Colors.redAccent;
-      });
-      return;
-    }
-
     // clear previous message
     setState(() {
       _saveMessage = '';
@@ -208,10 +186,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow)),
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
     );
 
-    String? err = await _authService.updateProfile(username: newName, email: newEmail);
+    String? err = await _authService.updateProfile(username: newName);
 
     if (context.mounted) Navigator.pop(context); // close loading
 
@@ -219,7 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _user = UserModel(
           uid: _user.uid,
-          email: newEmail.isNotEmpty ? newEmail : _user.email,
+          email: _user.email,
           username: newName.isNotEmpty ? newName : _user.username,
           dob: _user.dob,
           gender: _user.gender,
@@ -249,7 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.primaryYellow),
+              leading: const Icon(Icons.photo_library, color: AppColors.primaryBlue),
               title: const Text('Chọn từ thư viện', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
@@ -257,7 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppColors.primaryYellow),
+              leading: const Icon(Icons.camera_alt, color: AppColors.primaryBlue),
               title: const Text('Chụp ảnh', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
@@ -311,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onTap: _isEditing ? _showImageSourceSheet : null,
                       child: CircleAvatar(
                         radius: 50,
-                        backgroundColor: AppColors.primaryYellow,
+                        backgroundColor: AppColors.primaryBlue,
                         backgroundImage: (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty && _user.avatarUrl!.startsWith('http'))
                             ? CachedNetworkImageProvider(_user.avatarUrl!)
                             : (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty
@@ -332,16 +310,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _user.username,
                         style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                       ),
-                      Text(
-                        _user.email,
-                        style: const TextStyle(color: Colors.white54, fontSize: 16),
-                      ),
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: () => setState(() => _isEditing = true),
                         icon: const Icon(Icons.edit, size: 18),
                         label: const Text('Chỉnh sửa'),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow, foregroundColor: Colors.black),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
                       ),
                     ] else ...[
                       TextField(
@@ -355,24 +329,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      TextField(
-                        controller: _emailController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: const TextStyle(color: Colors.white70),
-                          filled: true,
-                          fillColor: const Color(0xFF353535),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           ElevatedButton(
                             onPressed: _saveProfile,
                             child: const Text('Lưu'),
-                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryYellow, foregroundColor: Colors.black),
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
                           ),
                           const SizedBox(width: 12),
                           OutlinedButton(
@@ -416,7 +379,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // 3. THÔNG TIN CÁ NHÂN
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Thông tin cá nhân", style: TextStyle(color: AppColors.primaryYellow, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text("Thông tin cá nhân", style: TextStyle(color: AppColors.primaryBlue, fontSize: 18, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 10),
               Container(
@@ -427,6 +390,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
+                    _buildInfoRow(Icons.calendar_today, "Email", _user.email),
+                    const Divider(color: Colors.white10),
                           _buildInfoRow(Icons.calendar_today, "Ngày sinh", _user.dob),
                     const Divider(color: Colors.white10),
                           _buildInfoRow(Icons.person, "Giới tính", _user.gender),
@@ -441,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Widget con để vẽ thẻ thống kê
-  Widget _buildStatCard(String title, String value, IconData icon, {Color color = AppColors.primaryYellow}) {
+  Widget _buildStatCard(String title, String value, IconData icon, {Color color = AppColors.primaryBlue}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
