@@ -72,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (value == 'logout') {
           _handleLogout();
         }
-        // Không cần case 'profile' vì đang ở trang profile rồi
+
       },
       color: const Color(0xFF353535),
       offset: const Offset(0, 50),
@@ -178,17 +178,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     final newName = _usernameController.text.trim();
-    final newEmail = _emailController.text.trim();
-    // Validate email format before saving
-    final emailRegex = RegExp(r"^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}");
-    if (newEmail.isNotEmpty && !emailRegex.hasMatch(newEmail)) {
-      setState(() {
-        _saveMessage = 'Email không hợp lệ, vui lòng nhập đúng định dạng.';
-        _saveMessageColor = Colors.redAccent;
-      });
-      return;
-    }
-
     // clear previous message
     setState(() {
       _saveMessage = '';
@@ -200,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
     );
 
-    String? err = await _authService.updateProfile(username: newName, email: newEmail);
+    String? err = await _authService.updateProfile(username: newName);
 
     if (context.mounted) Navigator.pop(context); // close loading
 
@@ -208,7 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _user = UserModel(
           uid: _user.uid,
-          email: newEmail.isNotEmpty ? newEmail : _user.email,
+          email: _user.email,
           username: newName.isNotEmpty ? newName : _user.username,
           dob: _user.dob,
           gender: _user.gender,
@@ -321,10 +310,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _user.username,
                         style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                       ),
-                      Text(
-                        _user.email,
-                        style: const TextStyle(color: Colors.white54, fontSize: 16),
-                      ),
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: () => setState(() => _isEditing = true),
@@ -344,17 +329,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      TextField(
-                        controller: _emailController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: const TextStyle(color: Colors.white70),
-                          filled: true,
-                          fillColor: const Color(0xFF353535),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -416,6 +390,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
+                    _buildInfoRow(Icons.calendar_today, "Email", _user.email),
+                    const Divider(color: Colors.white10),
                           _buildInfoRow(Icons.calendar_today, "Ngày sinh", _user.dob),
                     const Divider(color: Colors.white10),
                           _buildInfoRow(Icons.person, "Giới tính", _user.gender),
