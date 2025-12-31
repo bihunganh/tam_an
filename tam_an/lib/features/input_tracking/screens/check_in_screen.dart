@@ -48,9 +48,6 @@ class CheckInScreen extends StatelessWidget {
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
-                  shadows: [
-                    Shadow(color: AppColors.primaryBlue, blurRadius: 15),
-                  ],
                 ),
               ),
               const SizedBox(height: 8),

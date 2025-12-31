@@ -2,14 +2,14 @@ class UserModel {
   final String uid;
   final String email;
   final String username;
-  final String dob;      
-  final String gender;   
+  final String dob;
+  final String gender;
   final String? avatarUrl;
-  
+
   // --- PHẦN THỐNG KÊ (Statistic) ---
   final int totalCheckins;
   final int currentStreak;
-  final Map<String, int> moodCounts; 
+  final Map<String, int> moodCounts;
 
   final List<String> locationTags;
   final List<String> activityTags;
@@ -64,5 +64,35 @@ class UserModel {
       'currentStreak': currentStreak,
       'moodCounts': moodCounts,
     };
+  }
+
+  UserModel copyWith({
+    String? uid,
+    String? email,
+    String? username,
+    String? dob,
+    String? gender,
+    String? avatarUrl,
+    List<String>? locationTags,
+    List<String>? activityTags,
+    List<String>? companionTags,
+    int? totalCheckins,
+    int? currentStreak,
+    Map<String, int>? moodCounts,
+  }) {
+    return UserModel(
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      username: username ?? this.username,
+      dob: dob ?? this.dob,
+      gender: gender ?? this.gender,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      locationTags: locationTags ?? this.locationTags,
+      activityTags: activityTags ?? this.activityTags,
+      companionTags: companionTags ?? this.companionTags,
+      totalCheckins: totalCheckins ?? this.totalCheckins,
+      currentStreak: currentStreak ?? this.currentStreak,
+      moodCounts: moodCounts ?? this.moodCounts,
+    );
   }
 }

@@ -17,10 +17,10 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  
+
   final CheckInService _checkInService = CheckInService();
   final AuthService _authService = AuthService();
-  
+
   String? _currentUserId;
 
   @override
@@ -41,34 +41,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Dùng SingleChildScrollView bao bọc toàn bộ
-    return Container(
-      color: AppColors.background,
-      child: SingleChildScrollView( 
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. Lịch
-            _buildCalendar(),
-
+            _buildCalendar(theme),
             const SizedBox(height: 20),
-
-            // 2. Tiêu đề danh sách
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Nhật ký ngày ${_selectedDay != null ? DateFormat('dd/MM').format(_selectedDay!) : ''}",
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-
             const SizedBox(height: 10),
-
-            // 3. DANH SÁCH CHECK-IN
-            // Bỏ Expanded đi vì đang nằm trong SingleChildScrollView
-            _currentUserId == null 
+            _currentUserId == null
                 ? const Padding(
                     padding: EdgeInsets.only(top: 50),
                     child: Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
@@ -82,54 +75,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           child: Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
                         );
                       }
-                      
+
                       if (snapshot.hasError) {
                         return Padding(
                           padding: const EdgeInsets.only(top: 20),
-                          child: Center(child: Text("Lỗi: ${snapshot.error}", style: const TextStyle(color: Colors.red))),
+                          child: Center(child: Text("Lỗi: ${snapshot.error}", style: TextStyle(color: theme.colorScheme.error))),
                         );
                       }
 
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.only(top: 50),
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 50),
                           child: Center(
-                            child: Text("Chưa có nhật ký nào.\nHãy check-in ngay!", 
+                            child: Text(
+                              "Chưa có nhật ký nào.\nHãy check-in ngay!",
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white54)
+                              style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
                             ),
                           ),
                         );
                       }
 
                       List<CheckInModel> allHistory = snapshot.data!;
-                      
                       List<CheckInModel> dailyHistory = allHistory.where((item) {
                         return isSameDay(item.timestamp, _selectedDay);
                       }).toList();
 
                       if (dailyHistory.isEmpty) {
-                         return const Padding(
-                           padding: EdgeInsets.only(top: 50),
-                           child: Center(
-                            child: Text("Không có nhật ký trong ngày này.", 
-                              style: TextStyle(color: Colors.white30)
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 50),
+                          child: Center(
+                            child: Text(
+                              "Không có nhật ký trong ngày này.",
+                              style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4)),
                             ),
-                                                   ),
-                         );
+                          ),
+                        );
                       }
 
-                      // 2. Cấu hình ListView để cuộn chung với màn hình
                       return ListView.builder(
                         padding: const EdgeInsets.only(bottom: 20),
-                        shrinkWrap: true, // Quan trọng: Co lại vừa đủ nội dung
-                        physics: const NeverScrollableScrollPhysics(), // Quan trọng: Tắt cuộn riêng
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: dailyHistory.length,
                         itemBuilder: (context, index) {
                           final item = dailyHistory[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                            child: _buildHistoryItem(item),
+                            child: _buildHistoryItem(item, theme),
                           );
                         },
                       );
@@ -141,8 +134,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // ... (Phần _buildHistoryItem và _buildCalendar giữ nguyên như code cũ của bạn)
-  Widget _buildHistoryItem(CheckInModel item) {
+  Widget _buildHistoryItem(CheckInModel item, ThemeData theme) {
     Color moodColor;
     if (item.moodLevel == 6) moodColor = AppColors.moodHappy;
     else if (item.moodLevel == 5) moodColor = AppColors.moodFun;
@@ -160,15 +152,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
+        color: AppColors.cardColor,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: moodColor.withOpacity(0.15),
-            offset: const Offset(0, -4),
-            blurRadius: 10,
-          ),
-        ],
         border: Border(
           top: BorderSide(color: moodColor.withOpacity(0.8), width: 2),
         ),
@@ -181,7 +166,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             children: [
               Text(
                 DateFormat('HH:mm').format(item.timestamp),
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                style: theme.textTheme.titleMedium,
               ),
               Text(
                 item.moodLabel,
@@ -189,22 +174,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   color: moodColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  shadows: [Shadow(color: moodColor, blurRadius: 10)],
                 ),
               ),
             ],
           ),
-          
           if (item.note.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               item.note,
-              style: const TextStyle(color: Colors.white70, fontSize: 14, fontStyle: FontStyle.italic),
+              style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)),
             ),
           ],
-
-          Divider(color: Colors.white.withOpacity(0.1), height: 24),
-          
+          Divider(color: theme.dividerColor, height: 24),
           if (allTags.isNotEmpty)
             Wrap(
               spacing: 8,
@@ -212,12 +193,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: allTags.map((tag) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: theme.dividerColor.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   tag,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               )).toList(),
             ),
@@ -226,11 +207,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCalendar() {
+  Widget _buildCalendar(ThemeData theme) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: TableCalendar(
@@ -238,25 +219,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
         firstDay: DateTime.utc(2020, 10, 16),
         lastDay: DateTime.utc(2030, 3, 14),
         focusedDay: _focusedDay,
-        headerStyle: const HeaderStyle(
+        headerStyle: HeaderStyle(
           formatButtonVisible: false,
           titleCentered: true,
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-          leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
-          rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
+          titleTextStyle: theme.textTheme.titleMedium ?? const TextStyle(),
+          leftChevronIcon: Icon(Icons.chevron_left, color: theme.iconTheme.color),
+          rightChevronIcon: Icon(Icons.chevron_right, color: theme.iconTheme.color),
         ),
-        calendarStyle: const CalendarStyle(
-          defaultTextStyle: TextStyle(color: Colors.white),
-          weekendTextStyle: TextStyle(color: Colors.white70),
-          outsideTextStyle: TextStyle(color: Colors.grey),
+        calendarStyle: CalendarStyle(
+          defaultTextStyle: TextStyle(color: theme.textTheme.bodyMedium?.color),
+          weekendTextStyle: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)),
+          outsideTextStyle: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5)),
           selectedDecoration: BoxDecoration(
             color: Colors.transparent,
             shape: BoxShape.circle,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.primaryBlue, width: 2)),
+            border: const Border.fromBorderSide(BorderSide(color: AppColors.primaryBlue, width: 2)),
           ),
-          selectedTextStyle: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
+          selectedTextStyle: const TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
           todayDecoration: BoxDecoration(
-            color: Colors.white10,
+            color: theme.colorScheme.primary.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
         ),

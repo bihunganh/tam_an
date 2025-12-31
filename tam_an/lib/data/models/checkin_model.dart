@@ -1,19 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CheckInModel {
-  final String id;             // ID riêng của mỗi lần check-in
-  final String userId;         // Của người dùng nào
-  final DateTime timestamp;    // Thời gian check-in
-  
+  final String id;
+  final String userId;
+  final DateTime timestamp;
+
   // --- CẢM XÚC ---
-  final int moodLevel;         // Mức độ (1-5) để tính toán trung bình
-  final String moodLabel;      // Nhãn ("Vui", "Buồn", "Bình thường"...)
-  
-  // --- CHI TIẾT (Phần bạn vừa yêu cầu thêm) ---
-  final String note;           // Ghi chú nhật ký
-  final String location;       // Địa điểm ("Nhà", "Trường học"...)
-  final List<String> companions; // Ở cùng ai ("Một mình", "Gia đình", "Bạn bè"...)
-  final List<String> activities; // Hoạt động ("Học tập", "Ngủ", "Ăn uống"...)
+  final int moodLevel;
+  final String moodLabel;
+
+  // --- CHI TIẾT ---
+  final String note;
+  final String location;
+  final List<String> companions;
+  final List<String> activities;
 
   CheckInModel({
     required this.id,
@@ -21,24 +21,41 @@ class CheckInModel {
     required this.timestamp,
     required this.moodLevel,
     required this.moodLabel,
-    this.note = '',           // Mặc định rỗng nếu người dùng lười ghi
-    this.location = '',       // Mặc định rỗng
-    this.companions = const [], // Mặc định danh sách trống
+    this.note = '',
+    this.location = '',
+    this.companions = const [],
     this.activities = const [],
   });
 
   // 1. Chuyển đổi dữ liệu từ Firebase về App (Load lịch sử)
+  // --- PHIÊN BẢN NÂNG CẤP AN TOÀN ---
   factory CheckInModel.fromMap(Map<String, dynamic> data, String documentId) {
+
+    // Xử lý thông minh cho Timestamp: Nhận cả String và Timestamp
+    DateTime date;
+    try {
+      if (data['timestamp'] is Timestamp) {
+        // Trường hợp chuẩn: Dữ liệu từ Firebase
+        date = (data['timestamp'] as Timestamp).toDate();
+      } else if (data['timestamp'] is String) {
+        // Trường hợp dự phòng: Dữ liệu cũ hoặc chuỗi ISO 8601
+        date = DateTime.parse(data['timestamp']);
+      } else {
+        // Trường hợp lỗi: Lấy giờ hiện tại để không crash app
+        date = DateTime.now();
+      }
+    } catch (e) {
+      date = DateTime.now();
+    }
+
     return CheckInModel(
       id: documentId,
       userId: data['userId'] ?? '',
-      // Xử lý ngày tháng từ Firebase (Timestamp) về DateTime của Flutter
-      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      timestamp: date, // Đã xử lý an toàn ở trên
       moodLevel: data['moodLevel'] ?? 3,
       moodLabel: data['moodLabel'] ?? '',
       note: data['note'] ?? '',
       location: data['location'] ?? '',
-      // Ép kiểu về List<String> an toàn để tránh lỗi
       companions: List<String>.from(data['companions'] ?? []),
       activities: List<String>.from(data['activities'] ?? []),
     );
@@ -48,7 +65,8 @@ class CheckInModel {
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
-      'timestamp': timestamp, // Firebase tự hiểu kiểu DateTime
+      // Ép kiểu rõ ràng thành Timestamp để Firebase lưu đúng định dạng đồng hồ
+      'timestamp': Timestamp.fromDate(timestamp),
       'moodLevel': moodLevel,
       'moodLabel': moodLabel,
       'note': note,
