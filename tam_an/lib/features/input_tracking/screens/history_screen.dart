@@ -6,6 +6,7 @@ import '../../../../core/services/checkin_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../data/models/checkin_model.dart';
 import '../../../../data/models/user_model.dart';
+import '../widgets/history_widgets.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -30,6 +31,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _getUserId();
   }
 
+  Widget _buildMoodLegend(ThemeData theme) {
+    Widget legendItem(Color color, String label) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(label, style: theme.textTheme.bodySmall),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          legendItem(AppColors.moodMad, 'Tức giận'),
+          legendItem(AppColors.moodSad, 'Buồn'),
+          legendItem(AppColors.moodAnxiety, 'Lo âu'),
+          legendItem(AppColors.moodNeutral, 'Bình thường'),
+          legendItem(AppColors.moodFun, 'Vui'),
+          legendItem(AppColors.moodHappy, 'Hạnh phúc'),
+        ],
+      ),
+    );
+  }
+
   void _getUserId() async {
     UserModel? user = await _authService.getCurrentUser();
     if (mounted && user != null) {
@@ -48,7 +82,42 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildCalendar(theme),
+            // Load user's check-in history to compute per-day mood summary
+            _currentUserId == null
+                ? _buildCalendar(theme, {})
+                : StreamBuilder<List<CheckInModel>>(
+                    stream: _checkInService.getCheckInHistory(_currentUserId!),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return _buildCalendar(theme, {});
+
+                      // Group by date and compute dominant mood per day
+                      final Map<DateTime, Map<int, int>> countsByDate = {};
+                      for (final item in snapshot.data!) {
+                        final d = DateTime(item.timestamp.year, item.timestamp.month, item.timestamp.day);
+                        countsByDate.putIfAbsent(d, () => {});
+                        final m = countsByDate[d]!;
+                        m[item.moodLevel] = (m[item.moodLevel] ?? 0) + 1;
+                      }
+
+                      final Map<DateTime, int> dominantByDate = {};
+                      countsByDate.forEach((date, counts) {
+                        int dominant = counts.keys.first;
+                        int best = 0;
+                        counts.forEach((lvl, cnt) {
+                          if (cnt > best) {
+                            best = cnt;
+                            dominant = lvl;
+                          }
+                        });
+                        dominantByDate[date] = dominant;
+                      });
+
+                      return _buildCalendar(theme, dominantByDate);
+                    }),
+            const SizedBox(height: 20),
+            _buildMoodLegend(theme),
+            const SizedBox(height: 10),
+            EmotionDonutChart(userId: _currentUserId, selectedDay: _selectedDay),
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -128,6 +197,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       );
                     },
                   ),
+                  DailyEmotionSummary(userId: _currentUserId, selectedDay: _selectedDay),
+                  const SizedBox(height: 20),
+                
           ],
         ),
       ),
@@ -207,18 +279,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCalendar(ThemeData theme) {
+  Widget _buildCalendar(ThemeData theme, Map<DateTime, int> moodMap) {
+    Color _colorForMood(int level) {
+      if (level == 6) return AppColors.moodHappy;
+      if (level == 5) return AppColors.moodFun;
+      if (level == 4) return AppColors.moodNeutral;
+      if (level == 3) return AppColors.moodAnxiety;
+      if (level == 2) return AppColors.moodSad;
+      return AppColors.moodMad;
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: TableCalendar(
+        child: TableCalendar(
         locale: 'en_US',
         firstDay: DateTime.utc(2020, 10, 16),
         lastDay: DateTime.utc(2030, 3, 14),
         focusedDay: _focusedDay,
+        eventLoader: (day) {
+          final d = DateTime(day.year, day.month, day.day);
+          if (moodMap.containsKey(d)) return [moodMap[d]];
+          return const [];
+        },
         headerStyle: HeaderStyle(
           formatButtonVisible: false,
           titleCentered: true,
@@ -248,6 +334,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
             _focusedDay = focusedDay;
           });
         },
+        calendarBuilders: CalendarBuilders(
+          defaultBuilder: (context, day, focusedDay) {
+            final d = DateTime(day.year, day.month, day.day);
+            final lvl = moodMap[d];
+            if (lvl == null) return null;
+            final color = _colorForMood(lvl);
+            return Container(
+              margin: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 3),
+              ),
+              child: Center(
+                child: Text('${day.day}', style: theme.textTheme.bodyMedium),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
