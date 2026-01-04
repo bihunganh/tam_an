@@ -5,9 +5,16 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import '../../../core/constants/app_colors.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../data/models/checkin_model.dart';
 import '../../../core/services/insight_service.dart';
+
+// extracted widgets
+import '../widgets/line_chart_card.dart';
+import '../widgets/pie_chart_card.dart';
+import '../widgets/insight_card.dart';
+import '../widgets/stress_analysis_card.dart';
 
 class AnalysisScreen extends StatefulWidget {
   const AnalysisScreen({super.key});
@@ -290,63 +297,18 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   }
 
   Widget _buildLineChartCard() {
+    // Delegate to extracted widget; keep dropdown behaviour handled here via callback
     if (_monthlyLogs.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-          color: const Color(0xFF2A2A2A),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Biến thiên cảm xúc', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-              // Dropdown Menu đã cập nhật
-              Container(
-                height: 30,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(color: const Color(0xFF383838), borderRadius: BorderRadius.circular(8)),
-                child: DropdownButton<String>(
-                  value: _lineChartRange,
-                  dropdownColor: const Color(0xFF4A4A4A),
-                  underline: const SizedBox(),
-                  icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.primaryBlue, size: 18),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  // Thêm 'Cả tháng' vào list items
-                  items: ['7 ngày cuối', '14 ngày cuối', 'Cả tháng'].map((String value) {
-                    return DropdownMenuItem<String>(value: value, child: Text(value));
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _lineChartRange = newValue!;
-                      // Gọi lại hàm xử lý để vẽ lại chart
-                      DateTime endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
-                      if(endOfMonth.isAfter(DateTime.now())) endOfMonth = DateTime.now();
-                      _processLineChartData(endOfMonth);
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 25), // Tăng khoảng cách chút cho thoáng
-
-          if (_lineChartPoints.isEmpty)
-            const SizedBox(height: 150, child: Center(child: Text("Không có dữ liệu trong khoảng này", style: TextStyle(color: Colors.white30))))
-          else
-            SizedBox(
-              height: 200,
-              width: double.infinity, // Full width container
-              child: CustomPaint(
-                painter: SixColorChartPainter(points: _lineChartPoints, labels: _lineChartLabels),
-              ),
-            ),
-        ],
-      ),
+    return LineChartCard(
+      points: _lineChartPoints,
+      labels: _lineChartLabels,
+      range: _lineChartRange,
+      onRangeChanged: (r) {
+        setState(() => _lineChartRange = r);
+        DateTime endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
+        if (endOfMonth.isAfter(DateTime.now())) endOfMonth = DateTime.now();
+        _processLineChartData(endOfMonth);
+      },
     );
   }
 
@@ -354,153 +316,25 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   // Để code gọn, tôi sẽ copy lại các widget này ở dưới đây để bạn tiện copy-paste full file.
 
   Widget _buildPieChartCard() {
-    int total = _moodCounts.values.reduce((a, b) => a + b);
-    if (total == 0) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFF2A2A2A), borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Tỷ lệ cảm xúc', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              SizedBox(
-                width: 140, height: 140,
-                child: CustomPaint(painter: MoodPieChartPainter(moodCounts: _moodCounts, total: total)),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLegendItem(6, "Hạnh phúc", AppColors.moodHappy),
-                    _buildLegendItem(5, "Vui vẻ", AppColors.moodFun),
-                    _buildLegendItem(4, "Bình thường", AppColors.moodNeutral),
-                    _buildLegendItem(3, "Căng thẳng", AppColors.moodAnxiety),
-                    _buildLegendItem(2, "Buồn", AppColors.moodSad),
-                    _buildLegendItem(1, "Giận dữ", AppColors.moodMad),
-                  ],
-                ),
-              )
-            ],
-          )
-        ],
-      ),
-    );
+    return PieChartCard(moodCounts: _moodCounts);
   }
 
   Widget _buildLegendItem(int level, String label, Color color) {
-    int count = _moodCounts[level] ?? 0;
-    if (count == 0) return const SizedBox.shrink();
-    int total = _moodCounts.values.reduce((a, b) => a + b);
-    int percent = ((count / total) * 100).round();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 8),
-          Text("$label ($percent%)", style: const TextStyle(color: Colors.white70, fontSize: 11)),
-        ],
-      ),
-    );
+    // kept for compatibility but now handled inside PieChartCard
+    return const SizedBox.shrink();
   }
 
   Widget _buildInsightCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C3E50).withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 24),
-              SizedBox(width: 10),
-              Text('Góc nhìn Tâm An (AI)', style: TextStyle(color: Colors.amberAccent, fontSize: 16, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const Divider(color: Colors.white24, height: 24),
-          ..._aiInsights.map((text) => Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("• ", style: TextStyle(color: AppColors.primaryBlue, fontSize: 18, fontWeight: FontWeight.bold)),
-                Expanded(child: Text(text.replaceAll('**', ''), style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5))),
-              ],
-            ),
-          )),
-        ],
-      ),
-    );
+    return InsightCard(insights: _aiInsights);
   }
 
   Widget _buildStressAnalysisCard() {
-    Map<String, int> currentData = {};
-    if (_selectedStressCategory == 'Hành động') currentData = _negativeActivities;
-    if (_selectedStressCategory == 'Địa điểm') currentData = _negativeLocations;
-    if (_selectedStressCategory == 'Bạn bè') currentData = _negativeCompanions;
-
-    var sortedKeys = currentData.keys.toList()..sort((k1, k2) => currentData[k2]!.compareTo(currentData[k1]!));
-
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Nguyên nhân tiêu cực', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            Container(
-              height: 30,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primaryBlue.withOpacity(0.5))
-              ),
-              child: DropdownButton<String>(
-                value: _selectedStressCategory,
-                dropdownColor: const Color(0xFF383838),
-                underline: const SizedBox(),
-                icon: const Icon(Icons.tune, color: AppColors.primaryBlue, size: 16),
-                style: const TextStyle(color: AppColors.primaryBlue, fontSize: 12, fontWeight: FontWeight.bold),
-                items: ['Hành động', 'Địa điểm', 'Bạn bè'].map((String value) {
-                  return DropdownMenuItem<String>(value: value, child: Text(value));
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() => _selectedStressCategory = newValue!);
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-
-        if (currentData.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Text("Tuyệt vời! Không có dữ liệu tiêu cực cho mục này.", style: TextStyle(color: Colors.white30)),
-          )
-        else
-          ...sortedKeys.map((key) {
-            int val = currentData[key]!;
-            int max = currentData.values.reduce((a, b) => a > b ? a : b);
-            int percent = ((val / max) * 100).round();
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: _buildCategoryItem(key, percent, AppColors.moodMad),
-            );
-          }),
-      ],
+    return StressAnalysisCard(
+      negativeActivities: _negativeActivities,
+      negativeLocations: _negativeLocations,
+      negativeCompanions: _negativeCompanions,
+      selectedCategory: _selectedStressCategory,
+      onCategoryChanged: (v) => setState(() => _selectedStressCategory = v),
     );
   }
 

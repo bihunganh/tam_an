@@ -1,4 +1,3 @@
-import 'package:intl/intl.dart';
 import '../../../../data/models/checkin_model.dart';
 
 class InsightService {

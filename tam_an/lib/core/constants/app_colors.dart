@@ -9,7 +9,7 @@ class AppColors {
   static const Color textLight = Color(0xFFBFC8D8);
   static const Color buttonDark = Color(0xFF111214);
   static const Color successGreen = Color(0xFF34C759);
-  static const Color cardColor = Color(0xFF383838);
+  static const Color cardColor = Color.fromARGB(255, 35, 35, 35);
 
 
   // Light Theme Colors
