@@ -1,46 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart'; 
+import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // 1. Import SharedPrefs
+
+// Import các file core
 import 'core/constants/app_colors.dart';
-import 'main_screen.dart';
 import 'core/providers/user_provider.dart';
+
+// Import các màn hình
+import 'main_screen.dart';
 import 'features/auth_system/screens/sign_in.dart';
 import 'features/auth_system/screens/signup_screen.dart';
+import 'features/onboarding/onboarding_screen.dart'; // 2. Import Onboarding
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
-  
 
+  // Khóa màn hình dọc (Optional - giúp giao diện không bị vỡ)
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Khởi tạo định dạng ngày tháng
   await initializeDateFormatting();
 
-
+  // Khởi tạo Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // 3. LOGIC KIỂM TRA ONBOARDING
+  final prefs = await SharedPreferences.getInstance();
+  // Lấy trạng thái 'onboarding_seen'. Nếu chưa có (null) thì mặc định là false (chưa xem)
+  final bool isOnboardingCompleted = prefs.getBool('onboarding_seen') ?? false;
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => UserProvider()..loadUser(),
-      child: const TamAnApp(),
+      // Truyền trạng thái vào App. Nếu ĐÃ xem rồi thì showOnboarding = false
+      child: TamAnApp(showOnboarding: !isOnboardingCompleted),
     ),
   );
 }
 
 class TamAnApp extends StatelessWidget {
-  const TamAnApp({super.key});
+  final bool showOnboarding; // Biến nhận trạng thái
+
+  const TamAnApp({super.key, required this.showOnboarding});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tâm An', // Tên hiển thị khi đa nhiệm
-      debugShowCheckedModeBanner: false, // Tắt chữ "Debug" đỏ ở góc phải
-      
-      // Cấu hình Theme chung cho toàn app (Dark + Blue accents)
+      title: 'Tâm An',
+      debugShowCheckedModeBanner: false,
+
+      // Cấu hình Theme
       theme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
@@ -67,13 +85,20 @@ class TamAnApp extends StatelessWidget {
           unselectedItemColor: Colors.white70,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white, shape: const StadiumBorder()),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              foregroundColor: Colors.white,
+              shape: const StadiumBorder()
+          ),
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
 
-      // Màn hình đầu tiên hiện ra khi mở App
-      home: const MainScreen(),
+      // 4. QUYẾT ĐỊNH MÀN HÌNH KHỞI ĐỘNG
+      // Nếu cần show Onboarding -> Vào OnboardingScreen
+      // Nếu không -> Vào MainScreen (MainScreen sẽ tự check login hay chưa)
+      home: showOnboarding ? const OnboardingScreen() : const MainScreen(),
+
       routes: {
         '/home': (context) => const MainScreen(showNavBar: false),
         '/login': (context) => const LoginScreen(),

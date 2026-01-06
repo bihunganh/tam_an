@@ -25,26 +25,52 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() async {
+    // 1. Ẩn bàn phím để nhìn rõ thông báo
+    FocusScope.of(context).unfocus();
+
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    // 2. Kiểm tra dữ liệu đầu vào (Validation)
     if (email.isEmpty || password.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vui lòng nhập Email và Mật khẩu")),
+        const SnackBar(
+          content: Text("Vui lòng nhập Email và Mật khẩu"),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating, // Giúp hiển thị nổi lên trên
+        ),
+      );
+      return;
+    }
+
+    // Kiểm tra định dạng email cơ bản
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Email không đúng định dạng"),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
 
     if (password.length < 6) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Mật khẩu cần trên 6 kí tự"),
           backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
         ),
       );
-      return; 
+      return;
     }
 
+    // 3. Hiển thị Loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -53,25 +79,42 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
+    // 4. Gọi AuthService
     final authService = AuthService();
-    String? error = await authService.signIn(email: email, password: password);
+    // Dùng try-catch để bắt mọi lỗi tiềm ẩn
+    try {
+      String? error = await authService.signIn(email: email, password: password);
 
-    if (context.mounted) Navigator.pop(context);
+      // 5. Tắt Loading
+      if (context.mounted) Navigator.pop(context);
 
       if (error == null) {
-      if (context.mounted) {
-          // Load current user into provider so UI updates (avatar, profile, logout)
+        // --- THÀNH CÔNG ---
+        if (context.mounted) {
           try {
             Provider.of<UserProvider>(context, listen: false).loadUser();
           } catch (_) {}
-
           AppRouter.pushReplacement(context, const MainScreen(showLoginSuccess: true));
+        }
+      } else {
+        // --- CÓ LỖI TỪ FIREBASE ---
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error), // Hiển thị lỗi chi tiết từ Firebase
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
-    } else {
+    } catch (e) {
+      // --- LỖI HỆ THỐNG / CRASH ---
       if (context.mounted) {
+        Navigator.pop(context); // Tắt loading nếu còn
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error),
+            content: Text("Lỗi không xác định: $e"),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),

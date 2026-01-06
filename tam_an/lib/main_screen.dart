@@ -67,6 +67,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+
   void _handleLogout() {
     showDialog(
       context: context,
@@ -79,11 +80,18 @@ class _MainScreenState extends State<MainScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text("Hủy", style: TextStyle(color: Colors.white54)),
           ),
-              TextButton(
+          TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // 1. Đóng dialog
+
+              // 2. Gọi Firebase SignOut
               await _authService.signOut();
+
               if (mounted) {
+                // 3. XÓA DỮ LIỆU USER TRONG RAM (Để fix lỗi hiện thông tin cũ)
+                Provider.of<UserProvider>(context, listen: false).clear();
+
+                // 4. Chuyển về màn hình đăng nhập
                 AppRouter.pushAndRemoveUntil(context, const LoginScreen());
               }
             },

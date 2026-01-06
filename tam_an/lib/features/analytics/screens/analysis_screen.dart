@@ -98,7 +98,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         _aiInsights = _insightService.generateInsights(allLogs);
       }
 
-      _processLineChartData(endOfMonth); // Hàm này giờ đã thông minh hơn
+      _processLineChartData(endOfMonth); 
       _processPieChartData();
       _processStressCauses();
 

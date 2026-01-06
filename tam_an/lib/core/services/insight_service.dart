@@ -1,6 +1,88 @@
 import '../../../../data/models/checkin_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class InsightService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<int> getLongestStreak() async {
+    final user = _auth.currentUser;
+    if (user == null) return 0;
+
+    try {
+      // --- SỬA LẠI ĐƯỜNG DẪN PATH ---
+      // Phải tìm trong collection 'checkins' nơi chứa userId
+      // Thay vì tìm trong users/{id}/check-ins
+      final querySnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('checkin_history') // Tên collection này phải khớp 100% với trong DB
+          .orderBy('timestamp', descending: true) // Sắp xếp mới nhất trước
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        print("DEBUG: Không tìm thấy bản ghi check-in nào cho user này.");
+        return 0;
+      }
+
+      print("DEBUG: Tìm thấy ${querySnapshot.docs.length} bản ghi.");
+
+      // 2. Lấy list ngày (Chuẩn hóa về 00:00:00)
+      // Lưu ý: Kiểm tra xem field trong DB của bạn tên là 'date' hay 'timestamp'
+      // Ở các bước trước chúng ta lưu là 'timestamp'
+      final checkinDates = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        // Kiểm tra field nào chứa ngày tháng
+        Timestamp timestamp = data['timestamp'] ?? data['date'] ?? Timestamp.now();
+        final date = timestamp.toDate();
+        return DateTime(date.year, date.month, date.day);
+      }).toList();
+
+      // 3. Sắp xếp và loại trùng
+      final uniqueDates = checkinDates.toSet().toList();
+      uniqueDates.sort((a, b) => b.compareTo(a)); // Mới nhất trước
+
+      if (uniqueDates.isEmpty) return 0;
+      if (uniqueDates.length == 1) return 1;
+
+      // 4. Thuật toán tính chuỗi (Logic của bạn đã đúng, giữ nguyên)
+      int longestStreak = 1; // Ít nhất là 1 nếu list không rỗng
+      int currentStreak = 1;
+
+      for (int i = 0; i < uniqueDates.length - 1; i++) {
+        DateTime today = uniqueDates[i];
+        DateTime yesterday = uniqueDates[i + 1];
+
+        // Tính khoảng cách ngày
+        final difference = today.difference(yesterday).inDays;
+
+        if (difference == 1) {
+          // Liên tiếp
+          currentStreak++;
+        } else {
+          // Đứt chuỗi -> Cập nhật max
+          if (currentStreak > longestStreak) {
+            longestStreak = currentStreak;
+          }
+          currentStreak = 1; // Reset
+        }
+      }
+
+      // Check lần cuối sau khi hết vòng lặp
+      if (currentStreak > longestStreak) {
+        longestStreak = currentStreak;
+      }
+
+      print("DEBUG: Chuỗi dài nhất tính được là: $longestStreak");
+      return longestStreak;
+
+    } catch (e) {
+      print("Lỗi tính chuỗi ngày: $e");
+      return 0;
+    }
+  }
+
   // Hàm chính: Nhận vào danh sách log -> Trả về danh sách các câu nhận định (Insights)
   List<String> generateInsights(List<CheckInModel> logs) {
     if (logs.isEmpty) return ["Chưa đủ dữ liệu để phân tích."];
