@@ -3,14 +3,15 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/user_model.dart';
 import '../../../../core/services/auth_service.dart';
 import 'package:image_picker/image_picker.dart';
-// removed unused typed_data import
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:provider/provider.dart';
 import '../../../../core/navigation/app_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../auth_system/screens/sign_in.dart';
 import '../../input_tracking/widgets/custom_app_bar.dart';
 import '../../../../core/providers/user_provider.dart';
+import '../../../../core/services/insight_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final UserModel? user;
@@ -24,18 +25,23 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
   final ImagePicker _picker = ImagePicker();
+  final InsightService _insightService = InsightService();
 
-  // Local mutable copy of user to update UI after avatar change
   late UserModel _user;
+  int _longestStreak = 0;
 
-  String? _avatarBase64;
+  // Biến lưu ảnh tạm thời (Preview)
+  Uint8List? _tempAvatarBytes;
+
   bool _isEditing = false;
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
+
+  // Biến thông báo
   String _saveMessage = '';
   Color _saveMessageColor = Colors.green;
 
-  // --- HÀM XỬ LÝ ĐĂNG XUẤT (Copy từ MainScreen sang) ---
+  // --- HÀM XỬ LÝ ĐĂNG XUẤT ---
   void _handleLogout() {
     showDialog(
       context: context,
@@ -49,12 +55,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text("Hủy", style: TextStyle(color: Colors.white54)),
           ),
           TextButton(
-              onPressed: () async {
-              Navigator.pop(context); // Đóng dialog
-              await _authService.signOut(); // Gọi Firebase logout
-              
+            onPressed: () async {
+              Navigator.pop(context);
+              await _authService.signOut();
               if (mounted) {
-                // Quay về màn hình Login, xóa hết lịch sử
                 AppRouter.pushAndRemoveUntil(context, const LoginScreen());
               }
             },
@@ -65,14 +69,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- TẠO ICON AVATAR CHO APPBAR ---
   Widget _buildUserIcon() {
     return PopupMenuButton<String>(
       onSelected: (value) {
-        if (value == 'logout') {
-          _handleLogout();
-        }
-
+        if (value == 'logout') _handleLogout();
       },
       color: const Color(0xFF353535),
       offset: const Offset(0, 50),
@@ -88,10 +88,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
-      // Icon đại diện
-        child: Container(
+      child: Container(
         padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.primaryBlue, width: 2),
         ),
@@ -101,13 +100,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundImage: (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty && _user.avatarUrl!.startsWith('http'))
               ? CachedNetworkImageProvider(_user.avatarUrl!)
               : (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty
-                  ? MemoryImage(base64Decode(_user.avatarUrl!))
-                  : null) as ImageProvider<Object>?,
+              ? MemoryImage(base64Decode(_user.avatarUrl!))
+              : null) as ImageProvider<Object>?,
           child: (_user.avatarUrl == null || _user.avatarUrl!.isEmpty)
               ? Text(
-                  _user.username[0].toUpperCase(),
-                  style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white),
-                )
+            _user.username[0].toUpperCase(),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          )
               : null,
         ),
       ),
@@ -117,17 +116,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Prefer provided user; otherwise read from provider
     if (widget.user != null) {
       _user = widget.user!;
     } else {
       final prov = Provider.of<UserProvider>(context, listen: false).user;
       _user = prov ?? UserModel(uid: '', email: '', username: 'Người dùng', dob: '', gender: 'Khác');
     }
-    _avatarBase64 = _user.avatarUrl;
     _usernameController = TextEditingController(text: _user.username);
     _emailController = TextEditingController(text: _user.email);
-    // avatar bytes are not stored separately; use base64 string in _avatarBase64 if present
+    _loadLongestStreak();
+  }
+
+    Future<void> _loadLongestStreak() async {
+    final streak = await _insightService.getLongestStreak();
+    if (mounted) {
+      setState(() {
+        _longestStreak = streak;
+      });
+    }
   }
 
   @override
@@ -139,49 +145,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? picked = await _picker.pickImage(source: source, maxWidth: 1200, imageQuality: 85);
-      if (picked == null) return;
+      final XFile? picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 70,
+      );
+
+      if (picked == null || !mounted) return;
 
       final bytes = await picked.readAsBytes();
-      final base64str = base64Encode(bytes);
 
-      // Gọi service để cập nhật avatar (upload bytes to Storage)
-      String? err = await _authService.updateAvatarFromBytes(bytes);
-      if (err == null) {
-        setState(() {
-          _avatarBase64 = base64str;
-          _user = UserModel(
-            uid: _user.uid,
-            email: _user.email,
-            username: _user.username,
-            dob: _user.dob,
-            gender: _user.gender,
-            avatarUrl: _avatarBase64,
-            totalCheckins: _user.totalCheckins,
-            currentStreak: _user.currentStreak,
-            moodCounts: _user.moodCounts,
-          );
-        });
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật avatar thành công')));
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err), backgroundColor: Colors.redAccent));
-        }
-      }
+      setState(() {
+        _tempAvatarBytes = bytes;
+        _isEditing = true;
+        _saveMessage = ''; // Xóa thông báo cũ nếu có
+      });
+
     } catch (e) {
-      // ignore: avoid_print
-      print('Error pick avatar: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi chọn ảnh: $e'), backgroundColor: Colors.redAccent));
     }
   }
 
   Future<void> _saveProfile() async {
     final newName = _usernameController.text.trim();
-    // clear previous message
-    setState(() {
-      _saveMessage = '';
-    });
+    setState(() => _saveMessage = '');
 
     showDialog(
       context: context,
@@ -189,33 +177,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue)),
     );
 
-    String? err = await _authService.updateProfile(username: newName);
+    String? avatarUrlResult;
+    String? errorResult;
 
-    if (context.mounted) Navigator.pop(context); // close loading
+    try {
+      // 1. Upload ảnh nếu có
+      if (_tempAvatarBytes != null) {
+        avatarUrlResult = await _authService.uploadImageToStorage(_tempAvatarBytes!);
+      }
 
-    if (err == null) {
+      // 2. Cập nhật Firestore
+      errorResult = await _authService.updateProfile(
+        username: newName,
+        avatarUrl: avatarUrlResult,
+      );
+
+    } catch (e) {
+      errorResult = e.toString();
+    }
+
+    if (context.mounted) Navigator.pop(context);
+
+    if (errorResult == null) {
+      // THÀNH CÔNG
+      await Provider.of<UserProvider>(context, listen: false).loadUser();
+
       setState(() {
-        _user = UserModel(
-          uid: _user.uid,
-          email: _user.email,
-          username: newName.isNotEmpty ? newName : _user.username,
-          dob: _user.dob,
-          gender: _user.gender,
-          avatarUrl: _user.avatarUrl,
-          totalCheckins: _user.totalCheckins,
-          currentStreak: _user.currentStreak,
-          moodCounts: _user.moodCounts,
-        );
+        final newUser = Provider.of<UserProvider>(context, listen: false).user;
+        if (newUser != null) _user = newUser;
+
         _isEditing = false;
-        _saveMessage = 'Cập nhật thông tin thành công.';
+        _tempAvatarBytes = null;
+
+        // Đặt thông báo thành công
+        _saveMessage = 'Đã lưu thành công';
         _saveMessageColor = Colors.green;
       });
     } else {
+      // THẤT BẠI
       setState(() {
-        _saveMessage = err;
+        _saveMessage = errorResult!;
         _saveMessageColor = Colors.redAccent;
       });
     }
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _isEditing = false;
+      _tempAvatarBytes = null;
+      _usernameController.text = _user.username;
+      _emailController.text = _user.email;
+      _saveMessage = ''; // Xóa thông báo
+    });
   }
 
   void _showImageSourceSheet() {
@@ -248,19 +262,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  ImageProvider? _getAvatarImage() {
+    if (_tempAvatarBytes != null) {
+      return MemoryImage(_tempAvatarBytes!);
+    }
+    if (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty && _user.avatarUrl!.startsWith('http')) {
+      return CachedNetworkImageProvider(_user.avatarUrl!);
+    }
+    if (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty) {
+      try {
+        return MemoryImage(base64Decode(_user.avatarUrl!));
+      } catch (_) { return null; }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      
-      // --- APPBAR ĐÃ SỬA ---
+
       appBar: CustomAppBar(
-        // 1. Truyền Avatar vào để hiện trạng thái "Đã đăng nhập"
         actionWidget: _buildUserIcon(),
-        // 2. Bấm vào Logo Tâm An -> Quay về Home
-        onLogoTap: () {
-          Navigator.pop(context);
-        },
+        onLogoTap: () => Navigator.pop(context),
       ),
 
       body: SafeArea(
@@ -268,7 +292,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // --- 3. NÚT BACK THỦ CÔNG ---
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
@@ -278,54 +301,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   alignment: Alignment.centerLeft,
                 ),
               ),
-              
+
               const SizedBox(height: 10),
 
-              // 1. AVATAR & TÊN TO
               Center(
                 child: Column(
                   children: [
+                    // --- AVATAR CHÍNH ---
                     GestureDetector(
                       onTap: _isEditing ? _showImageSourceSheet : null,
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: AppColors.primaryBlue,
-                        backgroundImage: (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty && _user.avatarUrl!.startsWith('http'))
-                            ? CachedNetworkImageProvider(_user.avatarUrl!)
-                            : (_user.avatarUrl != null && _user.avatarUrl!.isNotEmpty
-                                ? MemoryImage(base64Decode(_user.avatarUrl!))
-                                : null) as ImageProvider<Object>?,
-                        child: (_user.avatarUrl == null || _user.avatarUrl!.isEmpty)
-                            ? Text(
-                                _user.username[0].toUpperCase(),
-                                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black),
-                              )
-                            : null,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: AppColors.primaryBlue,
+                            backgroundImage: _getAvatarImage(),
+                            child: (_getAvatarImage() == null)
+                                ? Text(
+                              _user.username.isNotEmpty ? _user.username[0].toUpperCase() : '?',
+                              style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black),
+                            )
+                                : null,
+                          ),
+
+                          if (_isEditing)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primaryBlue,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Name / Email or editable fields
+
+                    // --- PHẦN TÊN / EDIT ---
                     if (!_isEditing) ...[
+                      // 1. CHẾ ĐỘ XEM
                       Text(
                         _user.username,
                         style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
-                        onPressed: () => setState(() => _isEditing = true),
+                        onPressed: () => setState(() {
+                          _isEditing = true;
+                          _saveMessage = ''; // Reset thông báo khi bấm sửa
+                        }),
                         icon: const Icon(Icons.edit, size: 18),
                         label: const Text('Chỉnh sửa'),
                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
                       ),
+
+                      // >>> THÊM VÀO ĐÂY: Hiển thị thông báo khi ở chế độ XEM (sau khi lưu thành công)
+                      if (_saveMessage.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12.0),
+                          child: Text(
+                            _saveMessage,
+                            style: TextStyle(color: _saveMessageColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+
                     ] else ...[
+                      // 2. CHẾ ĐỘ SỬA
                       TextField(
                         controller: _usernameController,
                         style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Tên người dùng',
-                          labelStyle: const TextStyle(color: Colors.white70),
+                          labelStyle: TextStyle(color: Colors.white70),
                           filled: true,
-                          fillColor: const Color(0xFF353535),
+                          fillColor: Color(0xFF353535),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -334,24 +389,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           ElevatedButton(
                             onPressed: _saveProfile,
-                            child: const Text('Lưu'),
                             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue, foregroundColor: Colors.white),
+                            child: const Text('Lưu'),
                           ),
                           const SizedBox(width: 12),
                           OutlinedButton(
-                            onPressed: () {
-                              setState(() {
-                                _isEditing = false;
-                                _usernameController.text = _user.username;
-                                _emailController.text = _user.email;
-                                _saveMessage = '';
-                              });
-                            },
+                            onPressed: _cancelEdit,
                             child: const Text('Hủy', style: TextStyle(color: Colors.white)),
                           ),
                         ],
                       ),
-                      // Save / Error message area
+
+                      // Hiển thị thông báo lỗi (nếu có) khi đang sửa
                       if (_saveMessage.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 12.0),
@@ -366,17 +415,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 30),
 
-              // 2. THỐNG KÊ (STATISTIC)
+              // Các phần thống kê...
               Row(
                 children: [
                   _buildStatCard("Check-in", "${_user.totalCheckins}", Icons.check_circle_outline),
                   const SizedBox(width: 12),
-                  _buildStatCard("Chuỗi ngày", "${_user.currentStreak}", Icons.local_fire_department, color: Colors.orange),
+                  _buildStatCard("Chuỗi ngày", "$_longestStreak", Icons.local_fire_department, color: Colors.orange),
                 ],
               ),
               const SizedBox(height: 20),
 
-              // 3. THÔNG TIN CÁ NHÂN
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text("Thông tin cá nhân", style: TextStyle(color: AppColors.primaryBlue, fontSize: 18, fontWeight: FontWeight.bold)),
@@ -390,11 +438,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
-                    _buildInfoRow(Icons.calendar_today, "Email", _user.email),
+                    _buildInfoRow(Icons.email, "Email", _user.email),
                     const Divider(color: Colors.white10),
-                          _buildInfoRow(Icons.calendar_today, "Ngày sinh", _user.dob),
+                    _buildInfoRow(Icons.calendar_today, "Ngày sinh", _user.dob),
                     const Divider(color: Colors.white10),
-                          _buildInfoRow(Icons.person, "Giới tính", _user.gender),
+                    _buildInfoRow(Icons.person, "Giới tính", _user.gender),
                   ],
                 ),
               ),
@@ -405,7 +453,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Widget con để vẽ thẻ thống kê
   Widget _buildStatCard(String title, String value, IconData icon, {Color color = AppColors.primaryBlue}) {
     return Expanded(
       child: Container(
@@ -427,7 +474,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Widget con để vẽ dòng thông tin
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
