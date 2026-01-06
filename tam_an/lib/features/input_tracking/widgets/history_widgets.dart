@@ -312,9 +312,9 @@ class _DailyEmotionSummaryState extends State<DailyEmotionSummary> {
                                     ? [
                                         BoxShadow(
                                           color: mood.color.withOpacity(0.6), // Bóng màu đậm hơn
-                                          blurRadius: 20, // Độ nhòe lớn tạo hiệu ứng glow
-                                          spreadRadius: 2,
-                                          offset: const Offset(0, 4),
+                                          blurRadius: 10, // Độ nhòe lớn tạo hiệu ứng glow
+                                          spreadRadius: 1,
+                                          offset: const Offset(0, 0),
                                         )
                                       ]
                                     : [],

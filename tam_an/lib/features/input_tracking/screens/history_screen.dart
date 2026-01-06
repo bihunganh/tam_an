@@ -265,7 +265,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: allTags.map((tag) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: theme.dividerColor.withOpacity(0.5),
+                  color: theme.dividerColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

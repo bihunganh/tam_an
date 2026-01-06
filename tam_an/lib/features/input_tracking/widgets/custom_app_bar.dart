@@ -48,9 +48,10 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   @override
   void dispose() {
-    // ... (Giữ nguyên logic dispose cũ)
-    _removeOverlay();
-    _animationController.dispose();
+    if (_overlayEntry != null && _overlayEntry!.mounted) {
+      _overlayEntry!.remove();
+      _overlayEntry = null;
+    }
     super.dispose();
   }
 
@@ -63,12 +64,14 @@ class _CustomAppBarState extends State<CustomAppBar>
   }
 
   void _removeOverlay() {
-    if (_overlayEntry != null) {
-      _animationController.reverse();
+    if (_overlayEntry != null && _overlayEntry!.mounted) {
       _overlayEntry!.remove();
       _overlayEntry = null;
     }
-    setState(() => _isDropdownOpen = false);
+    if (mounted) {
+      setState(() {
+      });
+    }
   }
 
   void _toggleDropdown() {
