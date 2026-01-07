@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
-  // 1. Thêm tham số này để nhận Icon User từ bên ngoài
-  final Widget? actionWidget; 
+  final Widget? actionWidget;
   final VoidCallback? onLogoTap;
 
   const CustomAppBar({
-    super.key, 
-    this.actionWidget, // <---
+    super.key,
+    this.actionWidget,
     this.onLogoTap,
   });
 
@@ -21,8 +20,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
 
 class _CustomAppBarState extends State<CustomAppBar>
     with SingleTickerProviderStateMixin {
-  
-  // ... (Giữ nguyên toàn bộ phần khai báo biến Animation và Overlay cũ)
+
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   bool _isDropdownOpen = false;
@@ -32,7 +30,6 @@ class _CustomAppBarState extends State<CustomAppBar>
   @override
   void initState() {
     super.initState();
-    // ... (Giữ nguyên logic initState cũ)
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 250),
       vsync: this,
@@ -48,14 +45,11 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   @override
   void dispose() {
-    if (_overlayEntry != null && _overlayEntry!.mounted) {
-      _overlayEntry!.remove();
-      _overlayEntry = null;
-    }
+    _removeOverlay();
+    _animationController.dispose();
     super.dispose();
   }
 
-  // ... (Giữ nguyên các hàm _showOverlay, _removeOverlay, _toggleDropdown, _createOverlayEntry cũ)
   void _showOverlay() {
     _overlayEntry = _createOverlayEntry();
     Overlay.of(context).insert(_overlayEntry!);
@@ -69,26 +63,21 @@ class _CustomAppBarState extends State<CustomAppBar>
       _overlayEntry = null;
     }
     if (mounted) {
-      setState(() {
-      });
+      setState(() => _isDropdownOpen = false);
     }
   }
 
   void _toggleDropdown() {
     if (_isDropdownOpen) {
-      _removeOverlay();
+      _animationController.reverse().then((_) => _removeOverlay());
     } else {
       _showOverlay();
     }
   }
 
-  // Lưu ý: Đảm bảo bạn đã khai báo route '/login' và '/signup' trong MaterialApp
-  // Hoặc bạn có thể sửa lại thành Navigator.push(...) trực tiếp tại đây
   void _navigateToLogin() {
     _removeOverlay();
-    // Ví dụ sửa lại điều hướng trực tiếp nếu chưa có named route:
-    // Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
-    Navigator.pushNamed(context, '/login'); 
+    Navigator.pushNamed(context, '/login');
   }
 
   void _navigateToSignup() {
@@ -96,14 +85,14 @@ class _CustomAppBarState extends State<CustomAppBar>
     Navigator.pushNamed(context, '/signup');
   }
 
-  // ... (Giữ nguyên hàm _createOverlayEntry không thay đổi)
   OverlayEntry _createOverlayEntry() {
     final RenderBox iconBox = _iconKey.currentContext!.findRenderObject() as RenderBox;
     final Offset iconPos = iconBox.localToGlobal(Offset.zero);
     final Size iconSize = iconBox.size;
+    final theme = Theme.of(context); // Lấy theme cho Overlay
 
     const double menuWidth = 200.0;
-    double left = iconPos.dx + iconSize.width - menuWidth; 
+    double left = iconPos.dx + iconSize.width - menuWidth;
     left = left.clamp(8.0, MediaQuery.of(context).size.width - menuWidth - 8.0);
     final double top = iconPos.dy + iconSize.height + 8.0;
 
@@ -128,54 +117,32 @@ class _CustomAppBarState extends State<CustomAppBar>
                     child: Container(
                       width: menuWidth,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4A4A4A),
+                        color: theme.colorScheme.surface, // Màu nền Dropdown theo Theme
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withOpacity(0.2),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
                         ],
+                        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          InkWell(
+                          _buildDropdownItem(
+                            icon: Icons.login,
+                            label: 'Đăng nhập',
                             onTap: _navigateToLogin,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: Color(0xFF383838),
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                              child: Row(
-                                children: const [
-                                  Icon(Icons.login, color: AppColors.primaryBlue, size: 18),
-                                  SizedBox(width: 12),
-                                  Text('Đăng nhập', style: TextStyle(color: AppColors.textLight, fontSize: 14, fontWeight: FontWeight.w500)),
-                                ],
-                              ),
-                            ),
+                            theme: theme,
+                            hasDivider: true,
                           ),
-                          InkWell(
+                          _buildDropdownItem(
+                            icon: Icons.person_add,
+                            label: 'Đăng ký',
                             onTap: _navigateToSignup,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                              child: Row(
-                                children: const [
-                                  Icon(Icons.person_add, color: AppColors.primaryBlue, size: 18),
-                                  SizedBox(width: 12),
-                                  Text('Đăng ký', style: TextStyle(color: AppColors.textLight, fontSize: 14, fontWeight: FontWeight.w500)),
-                                ],
-                              ),
-                            ),
+                            theme: theme,
                           ),
                         ],
                       ),
@@ -190,50 +157,72 @@ class _CustomAppBarState extends State<CustomAppBar>
     });
   }
 
+  Widget _buildDropdownItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ThemeData theme,
+    bool hasDivider = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          border: hasDivider ? Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.1))) : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: theme.colorScheme.primary, size: 18),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                color: theme.textTheme.bodyLarge?.color,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      color: AppColors.background,
+      color: theme.scaffoldBackgroundColor, // Nền AppBar tự đổi màu
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: SafeArea(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Logo và tên ứng dụng (Giữ nguyên)
+              // Logo "Tâm An"
               GestureDetector(
                 onTap: () {
                   _removeOverlay();
-                  if (widget.onLogoTap != null) {
-                    widget.onLogoTap!();
-                  } else {
-                    // Mặc định (nếu ở HomeScreen) thì không làm gì hoặc reload
-                    // Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-                  }
+                  if (widget.onLogoTap != null) widget.onLogoTap!();
                 },
-                child: GestureDetector(
-                  onTap: () {
-                    if (widget.onLogoTap != null) widget.onLogoTap!();
-                  },
-                  child: const Text(
-                    'T â m A n',
-                    style: TextStyle(
-                      color: Color(0xFFCCCCCC),
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 4.0,
-                    ),
+                child: Text(
+                  'Tâm An',
+                  style: TextStyle(
+                    color: theme.textTheme.titleLarge?.color ?? theme.colorScheme.primary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4.0,
                   ),
                 ),
               ),
 
-              // --- LOGIC QUYẾT ĐỊNH HIỂN THỊ ICON ---
-              // Nếu widget.actionWidget != null (Tức là ĐÃ ĐĂNG NHẬP, MainScreen truyền Avatar vào)
-              if (widget.actionWidget != null) 
+              // Logic hiển thị Icon/Action Widget
+              if (widget.actionWidget != null)
                 widget.actionWidget!
-              
-              // Nếu widget.actionWidget == null (Tức là CHƯA ĐĂNG NHẬP -> Hiện menu Guest cũ)
-              else 
+              else
                 GestureDetector(
                   onTap: _toggleDropdown,
                   child: Container(
@@ -241,11 +230,15 @@ class _CustomAppBarState extends State<CustomAppBar>
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _isDropdownOpen ? const Color(0xFF5A5A5A) : Colors.transparent,
+                      color: _isDropdownOpen
+                          ? theme.colorScheme.primary.withOpacity(0.1)
+                          : Colors.transparent,
                     ),
                     child: Icon(
                       Icons.person,
-                      color: _isDropdownOpen ? AppColors.primaryBlue : const Color(0xFFCCCCCC),
+                      color: _isDropdownOpen
+                          ? theme.colorScheme.primary
+                          : theme.iconTheme.color?.withOpacity(0.7),
                       size: 28,
                     ),
                   ),

@@ -3,14 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../data/models/checkin_model.dart';
 import '../../../core/services/insight_service.dart';
+import '../../../../core/providers/theme_provider.dart'; // Import ThemeProvider
 
-// extracted widgets
+// Extracted widgets
 import '../widgets/line_chart_card.dart';
 import '../widgets/pie_chart_card.dart';
 import '../widgets/insight_card.dart';
@@ -25,18 +27,10 @@ class AnalysisScreen extends StatefulWidget {
 
 class _AnalysisScreenState extends State<AnalysisScreen> {
   bool _isLoading = true;
-
-  // --- GLOBAL STATE ---
   DateTime _selectedMonth = DateTime.now();
-
-  // --- CHART STATE ---
-  // Thêm tùy chọn 'Cả tháng' vào đây
-  String _lineChartRange = '7 ngày cuối'; // Options: '7 ngày cuối', '14 ngày cuối', 'Cả tháng'
-
-  // --- STRESS CAUSE STATE ---
+  String _lineChartRange = '7 ngày cuối';
   String _selectedStressCategory = 'Hành động';
 
-  // --- DỮ LIỆU ---
   List<CheckInModel> _monthlyLogs = [];
   List<Offset> _lineChartPoints = [];
   List<String> _lineChartLabels = [];
@@ -59,7 +53,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   void _changeMonth(int offset) {
     setState(() {
       _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + offset, 1);
-      // Khi đổi tháng, reset lại view về mặc định hoặc giữ nguyên tùy ý (ở đây giữ nguyên)
       _fetchAndProcessData();
     });
   }
@@ -69,14 +62,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     final user = await _authService.getCurrentUser();
     if (user == null) return;
 
-    // 1. Lấy dữ liệu THÁNG (Tính toán ngày đầu và cuối tháng)
     DateTime startOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
     DateTime endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
 
-    // Nếu là tháng tương lai hoặc hiện tại, giới hạn lại đến thời điểm hiện tại
-    if (endOfMonth.isAfter(DateTime.now())) {
-      endOfMonth = DateTime.now();
-    }
+    if (endOfMonth.isAfter(DateTime.now())) endOfMonth = DateTime.now();
 
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -91,55 +80,43 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       List<CheckInModel> allLogs = snapshot.docs.map((doc) => CheckInModel.fromMap(doc.data(), doc.id)).toList();
       _monthlyLogs = allLogs;
 
-      // Xử lý các phần dữ liệu
       if (allLogs.isEmpty) {
         _aiInsights = ["Chưa có dữ liệu cho tháng này."];
       } else {
         _aiInsights = _insightService.generateInsights(allLogs);
       }
 
-      _processLineChartData(endOfMonth); 
+      _processLineChartData(endOfMonth);
       _processPieChartData();
       _processStressCauses();
 
       if (mounted) setState(() => _isLoading = false);
-
     } catch (e) {
-      print("❌ Lỗi Analysis: $e");
       if(mounted) setState(() => _isLoading = false);
     }
   }
 
-  // --- LOGIC XỬ LÝ BIỂU ĐỒ LINE (ĐÃ NÂNG CẤP) ---
   void _processLineChartData(DateTime currentMonthEndDate) {
     DateTime startDate;
     int daysToRender;
 
-    // Logic xác định khoảng thời gian dựa trên Dropdown
     if (_lineChartRange == 'Cả tháng') {
-      // Bắt đầu từ ngày 1
       startDate = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
-      // Số ngày = khoảng cách từ ngày 1 đến ngày cuối (hoặc hôm nay)
       daysToRender = currentMonthEndDate.difference(startDate).inDays + 1;
     } else {
-      // Logic cũ cho 7 và 14 ngày
       daysToRender = (_lineChartRange == '7 ngày cuối') ? 7 : 14;
       startDate = currentMonthEndDate.subtract(Duration(days: daysToRender - 1));
-      // Reset giờ về 0h00 để tính toán khung cho chuẩn
       startDate = DateTime(startDate.year, startDate.month, startDate.day);
     }
 
-    // Tạo khung dữ liệu (Map)
     Map<String, List<int>> groupedData = {};
     for (int i = 0; i < daysToRender; i++) {
       DateTime d = startDate.add(Duration(days: i));
-      String key = DateFormat('d').format(d); // Key là ngày: "1", "2"...
+      String key = DateFormat('d').format(d);
       groupedData[key] = [];
     }
 
-    // Đổ dữ liệu thật vào khung
     for (var log in _monthlyLogs) {
-      // Chỉ lấy log nằm trong khoảng startDate -> currentMonthEndDate
       if (log.timestamp.isAfter(startDate.subtract(const Duration(seconds: 1)))) {
         String key = DateFormat('d').format(log.timestamp.toLocal());
         if (groupedData.containsKey(key)) {
@@ -148,13 +125,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       }
     }
 
-    // Chuyển đổi sang List<Offset> để vẽ
     List<Offset> points = [];
     List<String> labels = [];
     int index = 0;
 
-    // Sort keys để đảm bảo vẽ đúng thứ tự từ trái qua phải (quan trọng cho chế độ Cả tháng)
-    // Tuy nhiên vì ta tạo khung groupedData theo vòng lặp thời gian nên thứ tự insertion đã đúng rồi.
     groupedData.forEach((key, moods) {
       labels.add(key);
       if (moods.isNotEmpty) {
@@ -193,35 +167,32 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( // Dùng Scaffold để quản lý SafeArea tốt hơn
-      backgroundColor: AppColors.background,
+    final theme = Theme.of(context); //
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor, //
       body: Column(
         children: [
-          // 1. COMPACT HEADER (Đã sửa cho gọn đẹp)
-          _buildCompactMonthSelector(),
+          _buildCompactMonthSelector(theme), // Truyền theme vào header
 
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue))
+                ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)) //
                 : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               child: Column(
                 children: [
-                  // 2. LINE CHART (Có thêm 'Cả tháng')
                   _buildLineChartCard(),
                   const SizedBox(height: 20),
 
-                  // 3. PIE CHART
                   if (_monthlyLogs.isNotEmpty) ...[
                     _buildPieChartCard(),
                     const SizedBox(height: 20),
                   ],
 
-                  // 4. AI INSIGHT
                   _buildInsightCard(),
                   const SizedBox(height: 20),
 
-                  // 5. STRESS ANALYSIS
                   if (_monthlyLogs.isNotEmpty)
                     _buildStressAnalysisCard(),
 
@@ -235,44 +206,43 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
-  // --- WIDGET HEADER MỚI (GỌN GÀNG HƠN) ---
-  Widget _buildCompactMonthSelector() {
+  Widget _buildCompactMonthSelector(ThemeData theme) {
     String monthStr = DateFormat('MMMM, yyyy', 'vi_VN').format(_selectedMonth);
     monthStr = monthStr.replaceFirst(monthStr[0], monthStr[0].toUpperCase());
 
     return Container(
-      color: const Color(0xFF202020), // Màu nền tối hơn background chút để tách biệt
-      child: SafeArea( // Tự động tránh tai thỏ/status bar
+      // Màu nền header nhạt hơn một chút để tạo chiều sâu
+      color: theme.brightness == Brightness.dark
+          ? const Color(0xFF1E1E1E)
+          : Colors.grey[100],
+      child: SafeArea(
         bottom: false,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Nút Previous nhỏ gọn
               InkWell(
                 onTap: () => _changeMonth(-1),
                 borderRadius: BorderRadius.circular(20),
-                child: const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Icon(Icons.chevron_left, color: Colors.white70, size: 28),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(Icons.chevron_left, color: theme.iconTheme.color, size: 28), //
                 ),
               ),
 
-              // Text Tháng
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text("THỐNG KÊ", style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  Text("THỐNG KÊ", style: TextStyle(color: theme.colorScheme.primary.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                   const SizedBox(height: 2),
                   Text(
                     monthStr,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 16, fontWeight: FontWeight.bold), //
                   ),
                 ],
               ),
 
-              // Nút Next nhỏ gọn
               InkWell(
                 onTap: DateTime(_selectedMonth.year, _selectedMonth.month + 1).isAfter(DateTime.now())
                     ? null
@@ -283,8 +253,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   child: Icon(
                       Icons.chevron_right,
                       color: DateTime(_selectedMonth.year, _selectedMonth.month + 1).isAfter(DateTime.now())
-                          ? Colors.white12
-                          : Colors.white70,
+                          ? theme.disabledColor
+                          : theme.iconTheme.color,
                       size: 28
                   ),
                 ),
@@ -297,7 +267,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   }
 
   Widget _buildLineChartCard() {
-    // Delegate to extracted widget; keep dropdown behaviour handled here via callback
     if (_monthlyLogs.isEmpty) return const SizedBox.shrink();
     return LineChartCard(
       points: _lineChartPoints,
@@ -312,16 +281,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
-  // ... (Các widget PieChart, Insight, StressAnalysis giữ nguyên như code trước) ...
-  // Để code gọn, tôi sẽ copy lại các widget này ở dưới đây để bạn tiện copy-paste full file.
-
   Widget _buildPieChartCard() {
     return PieChartCard(moodCounts: _moodCounts);
-  }
-
-  Widget _buildLegendItem(int level, String label, Color color) {
-    // kept for compatibility but now handled inside PieChartCard
-    return const SizedBox.shrink();
   }
 
   Widget _buildInsightCard() {
@@ -337,35 +298,16 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       onCategoryChanged: (v) => setState(() => _selectedStressCategory = v),
     );
   }
-
-  Widget _buildCategoryItem(String category, int percentage, Color barColor) {
-    return Row(
-      children: [
-        SizedBox(width: 90, child: Text(category, style: const TextStyle(color: Colors.white, fontSize: 13), overflow: TextOverflow.ellipsis)),
-        Expanded(
-          child: Stack(
-            children: [
-              Container(height: 8, decoration: BoxDecoration(color: const Color(0xFF383838), borderRadius: BorderRadius.circular(4))),
-              FractionallySizedBox(
-                widthFactor: percentage / 100,
-                child: Container(height: 8, decoration: BoxDecoration(color: barColor, borderRadius: BorderRadius.circular(4))),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(width: 35, child: Text('$percentage%', textAlign: TextAlign.right, style: const TextStyle(color: Colors.white54, fontSize: 12))),
-      ],
-    );
-  }
 }
 
-// --- PAINTERS (Giữ nguyên) ---
+// --- PAINTERS CẬP NHẬT THEME ---
 
 class SixColorChartPainter extends CustomPainter {
   final List<Offset> points;
   final List<String> labels;
-  SixColorChartPainter({required this.points, required this.labels});
+  final ThemeData theme; // Nhận theme từ widget chính
+
+  SixColorChartPainter({required this.points, required this.labels, required this.theme});
 
   final List<Color> moodColors = [AppColors.moodMad, AppColors.moodSad, AppColors.moodAnxiety, AppColors.moodNeutral, AppColors.moodFun, AppColors.moodHappy];
 
@@ -376,7 +318,6 @@ class SixColorChartPainter extends CustomPainter {
     int n = labels.length;
     double stepX = n > 1 ? w / (n - 1) : w;
 
-    // Dải màu
     double segH = h / 6;
     Paint barP = Paint()..style = PaintingStyle.fill;
     for(int i=0; i<6; i++) {
@@ -384,41 +325,34 @@ class SixColorChartPainter extends CustomPainter {
       canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, i*segH+2, 6, segH-4), const Radius.circular(3)), barP);
     }
 
-    // Lưới & Chữ (Thông minh)
-    Paint gridP = Paint()..color = Colors.white10..strokeWidth = 1;
+    // Cập nhật màu lưới theo Theme
+    Paint gridP = Paint()..color = theme.dividerColor.withOpacity(0.1)..strokeWidth = 1;
     TextPainter tp = TextPainter(textDirection: ui.TextDirection.ltr);
 
-    // Logic Anchor Points (Quan trọng cho chế độ Cả tháng)
     List<int> idxs = [];
     if(n <= 7) idxs = List.generate(n, (i)=>i);
     else {
-      idxs.add(0);
-      idxs.add((n * 0.25).round());
-      idxs.add((n * 0.5).round());
-      idxs.add((n * 0.75).round());
-      idxs.add(n-1);
-      idxs = idxs.toSet().toList()..sort(); // Unique & Sort
+      idxs.addAll([0, (n * 0.25).round(), (n * 0.5).round(), (n * 0.75).round(), n-1]);
+      idxs = idxs.toSet().toList()..sort();
     }
 
     for(int i=0; i<n; i++) {
       double x = leftPadding + i*stepX;
       canvas.drawLine(Offset(x, 0), Offset(x, h), gridP);
       if(idxs.contains(i) && i < labels.length) {
-        tp.text = TextSpan(text: labels[i], style: const TextStyle(color: Colors.white54, fontSize: 10));
+        // Cập nhật màu chữ nhãn biểu đồ
+        tp.text = TextSpan(text: labels[i], style: TextStyle(color: theme.textTheme.bodySmall?.color?.withOpacity(0.5), fontSize: 10));
         tp.layout();
-
-        // Căn lề thông minh
         double textX = x - tp.width/2;
         if(i==0) textX = x;
         if(i==n-1) textX = x - tp.width;
-
         tp.paint(canvas, Offset(textX, h + 10));
       }
     }
 
-    // Đường & Dot
     if(points.isEmpty) return;
-    Paint lineP = Paint()..color = Colors.white..strokeWidth=2..style=PaintingStyle.stroke;
+    // Cập nhật màu đường biểu đồ
+    Paint lineP = Paint()..color = theme.colorScheme.primary..strokeWidth=2..style=PaintingStyle.stroke;
     Path path = Path();
     double getY(double v) => h - ((v.clamp(1.0, 6.0)-1)/5 * h);
     path.moveTo(leftPadding + points[0].dx.toInt()*stepX, getY(points[0].dy));
@@ -433,7 +367,7 @@ class SixColorChartPainter extends CustomPainter {
     canvas.drawPath(path, lineP);
 
     Paint dotF = Paint()..style=PaintingStyle.fill;
-    Paint dotS = Paint()..style=PaintingStyle.stroke..color=Colors.white..strokeWidth=2;
+    Paint dotS = Paint()..style=PaintingStyle.stroke..color=theme.scaffoldBackgroundColor..strokeWidth=2;
     for(var p in points) {
       double x = leftPadding + p.dx.toInt()*stepX;
       double y = getY(p.dy);
@@ -449,7 +383,9 @@ class SixColorChartPainter extends CustomPainter {
 class MoodPieChartPainter extends CustomPainter {
   final Map<int, int> moodCounts;
   final int total;
-  MoodPieChartPainter({required this.moodCounts, required this.total});
+  final ThemeData theme; // Nhận theme để xử lý màu nền tâm biểu đồ
+
+  MoodPieChartPainter({required this.moodCounts, required this.total, required this.theme});
 
   final List<Color> moodColors = [Colors.grey, AppColors.moodMad, AppColors.moodSad, AppColors.moodAnxiety, AppColors.moodNeutral, AppColors.moodFun, AppColors.moodHappy];
 
@@ -467,12 +403,14 @@ class MoodPieChartPainter extends CustomPainter {
         double sweepAngle = (count / total) * 2 * math.pi;
         paint.color = moodColors[i];
         canvas.drawArc(rect, startAngle, sweepAngle, true, paint);
-        Paint border = Paint()..color = const Color(0xFF2A2A2A)..style = PaintingStyle.stroke..strokeWidth = 2;
+        // Viền giữa các miếng bánh
+        Paint border = Paint()..color = theme.colorScheme.surface..style = PaintingStyle.stroke..strokeWidth = 2;
         canvas.drawArc(rect, startAngle, sweepAngle, true, border);
         startAngle += sweepAngle;
       }
     }
-    Paint holePaint = Paint()..color = const Color(0xFF2A2A2A);
+    // Lỗ hổng tâm biểu đồ tròn lấy theo màu Surface của theme
+    Paint holePaint = Paint()..color = theme.colorScheme.surface;
     canvas.drawCircle(center, radius * 0.5, holePaint);
   }
   @override

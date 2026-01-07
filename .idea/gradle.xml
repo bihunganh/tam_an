@@ -7,9 +7,9 @@
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
-              <build path="D:/bihunganh/flutter/packages/flutter_tools/gradle" name="gradle">
+              <build path="$PROJECT_DIR$/../../bihunganh/flutter/packages/flutter_tools/gradle" name="gradle">
                 <projects>
-                  <project path="D:/bihunganh/flutter/packages/flutter_tools/gradle" />
+                  <project path="$PROJECT_DIR$/../../bihunganh/flutter/packages/flutter_tools/gradle" />
                 </projects>
               </build>
             </builds>
@@ -17,7 +17,7 @@
         </compositeConfiguration>
         <option name="testRunner" value="CHOOSE_PER_TEST" />
         <option name="externalProjectPath" value="$PROJECT_DIR$/tam_an/android" />
-        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="gradleJvm" value="#GRADLE_LOCAL_JAVA_HOME" />
         <option name="modules">
           <set>
             <option value="$USER_HOME$/AppData/Local/Pub/Cache/hosted/pub.dev/cloud_firestore-6.1.0/android" />
@@ -30,7 +30,7 @@
             <option value="$USER_HOME$/AppData/Local/Pub/Cache/hosted/pub.dev/sqflite_android-2.4.2+2/android" />
             <option value="$PROJECT_DIR$/tam_an/android" />
             <option value="$PROJECT_DIR$/tam_an/android/app" />
-            <option value="D:/bihunganh/flutter/packages/flutter_tools/gradle" />
+            <option value="$PROJECT_DIR$/../../bihunganh/flutter/packages/flutter_tools/gradle" />
           </set>
         </option>
       </GradleProjectSettings>

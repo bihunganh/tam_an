@@ -6,24 +6,27 @@ import '../../../../main_screen.dart';
 import '../../auth_system/screens/sign_in.dart';
 
 class HomeScreen extends StatelessWidget {
-  // Nhận biến user từ MainScreen truyền xuống
   final UserModel? currentUser;
 
   const HomeScreen({super.key, this.currentUser});
 
   @override
   Widget build(BuildContext context) {
+    // 1. Lấy thông tin Theme hiện tại
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary; // Sẽ là Xanh (Sáng) hoặc Vàng (Tối)
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // --- 1. LOGIC HIỂN THỊ TEXT CHÀO MỪNG ---
+          // --- VĂN BẢN CHÀO MỪNG (Tự đổi màu theo Theme) ---
           Text(
             currentUser == null
                 ? "Chào bạn,"
                 : "Chào ${currentUser!.username},",
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: theme.textTheme.headlineMedium?.color,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
@@ -31,60 +34,53 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          const Text(
+          Text(
             "Hôm nay bạn cảm thấy thế nào?",
             style: TextStyle(
-              color: Colors.white54,
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
               fontSize: 16,
             ),
           ),
 
           const SizedBox(height: 30),
 
-          // --- 2. NÚT CHECK-IN
+          // --- NÚT CHECK-IN KHỔNG LỒ ---
           InkWell(
-              onTap: () {
-                // LOGIC KIỂM TRA ĐĂNG NHẬP (Đã sửa lỗi crash)
-                if (currentUser == null) {
-                  // Nếu chưa đăng nhập -> Chuyển thẳng sang màn hình Login
-                  // Không hiện SnackBar ở đây để tránh lỗi "Unsafe Context"
-                  AppRouter.push(context, const LoginScreen());
-                } else {
-                  // Nếu đã đăng nhập -> Vào Check-in bình thường
-                  AppRouter.push(context, const MainScreen(showNavBar: true));
-                }
+            onTap: () {
+              if (currentUser == null) {
+                AppRouter.push(context, const LoginScreen());
+              } else {
+                AppRouter.push(context, const MainScreen(showNavBar: true));
+              }
             },
-            borderRadius: BorderRadius.circular(110),
+            borderRadius: BorderRadius.circular(130),
             child: Container(
               width: 260,
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.cardColor,
+                color: theme.colorScheme.surface, // Màu nền nút tự đổi
                 boxShadow: [
-                  // Tạo viền cứng màu xanh chỉ ở phía dưới
                   BoxShadow(
-                    color: AppColors.primaryBlue,
-                    offset: const Offset(0, 5), // Đẩy bóng xuống dưới 6px
-                    blurRadius: 0, // Không làm mờ -> Tạo nét cứng
-                    spreadRadius: 0,
+                    color: primaryColor.withOpacity(0.5),
+                    offset: const Offset(0, 6), // Đổ bóng xuống dưới
+                    blurRadius: 12, // Tạo hiệu ứng phát sáng nhẹ
+                    spreadRadius: 2,
                   ),
                 ],
-
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.05),
-                  width: 1,
+                  color: primaryColor.withOpacity(0.2),
+                  width: 2,
                 ),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   "CHECK-IN",
                   style: TextStyle(
-                    color: AppColors.primaryBlue,
-                    fontSize: 32, // Chữ to hơn
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    // Đã bỏ shadows (glow) của chữ
+                    color: primaryColor, // Chữ Xanh hoặc Vàng
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
                   ),
                 ),
               ),
@@ -93,16 +89,16 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 50),
 
-          // --- 3. CÁC ICON CẢM XÚC ---
+          // --- CÁC ICON CẢM XÚC PHÍA DƯỚI ---
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildSmallIcon(Icons.sentiment_very_dissatisfied),
-              _buildSmallIcon(Icons.sentiment_dissatisfied),
-              _buildSmallIcon(Icons.sentiment_neutral),
-              _buildSmallIcon(Icons.sentiment_satisfied),
-              _buildSmallIcon(Icons.sentiment_very_satisfied),
-              _buildSmallIcon(Icons.sentiment_very_satisfied_rounded),
+              _buildSmallIcon(Icons.sentiment_very_dissatisfied, primaryColor),
+              _buildSmallIcon(Icons.sentiment_dissatisfied, primaryColor),
+              _buildSmallIcon(Icons.sentiment_neutral, primaryColor),
+              _buildSmallIcon(Icons.sentiment_satisfied, primaryColor),
+              _buildSmallIcon(Icons.sentiment_very_satisfied, primaryColor),
+              _buildSmallIcon(Icons.sentiment_very_satisfied_rounded, primaryColor),
             ],
           ),
         ],
@@ -110,12 +106,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSmallIcon(IconData icon) {
+  Widget _buildSmallIcon(IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Icon(
         icon,
-        color: AppColors.primaryBlue.withOpacity(0.7), // Giảm độ sáng icon phụ một chút cho nút chính nổi bật
+        color: color.withOpacity(0.4), // Màu icon mờ hơn nút chính
         size: 28,
       ),
     );

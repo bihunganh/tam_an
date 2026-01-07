@@ -6,9 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'core/providers/user_provider.dart';
+import 'core/providers/theme_provider.dart'; // Thêm import này
 import 'features/user_profile/screens/profile_screen.dart';
 import 'features/auth_system/screens/sign_in.dart';
-import 'features/input_tracking/widgets/custom_app_bar.dart'; // Import Appbar
+import 'features/input_tracking/widgets/custom_app_bar.dart';
 import 'dart:convert';
 
 // Import các màn hình con
@@ -37,15 +38,11 @@ class _MainScreenState extends State<MainScreen> {
   late int _selectedIndex;
   final AuthService _authService = AuthService();
 
-  // Danh sách các màn hình
-  // Lưu ý: Ta chuyển _screens thành hàm getter hoặc build trong build() để truyền currentUser
-  
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
 
-    // Show login success notification if requested
     if (widget.showLoginSuccess) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,38 +57,33 @@ class _MainScreenState extends State<MainScreen> {
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            margin: const EdgeInsets.all(10),
           ),
         );
       });
     }
   }
 
-
+  // --- HÀM XỬ LÝ ĐĂNG XUẤT (Cập nhật màu Theme) ---
   void _handleLogout() {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF303030),
-        title: const Text("Đăng xuất", style: TextStyle(color: AppColors.primaryBlue)),
-        content: const Text("Bạn có chắc chắn muốn đăng xuất không?", style: TextStyle(color: Colors.white70)),
+        backgroundColor: theme.colorScheme.surface, // Màu nền theo Theme
+        title: Text("Đăng xuất", style: TextStyle(color: theme.colorScheme.primary)),
+        content: Text("Bạn có chắc chắn muốn đăng xuất không?",
+            style: TextStyle(color: theme.textTheme.bodyMedium?.color)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Hủy", style: TextStyle(color: Colors.white54)),
+            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // 1. Đóng dialog
-
-              // 2. Gọi Firebase SignOut
+              Navigator.pop(context);
               await _authService.signOut();
-
               if (mounted) {
-                // 3. XÓA DỮ LIỆU USER TRONG RAM (Để fix lỗi hiện thông tin cũ)
                 Provider.of<UserProvider>(context, listen: false).clear();
-
-                // 4. Chuyển về màn hình đăng nhập
                 AppRouter.pushAndRemoveUntil(context, const LoginScreen());
               }
             },
@@ -108,92 +100,93 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // --- HÀM TẠO ICON USER CHO APPBAR ---
+  // --- ICON USER AppBar (Cập nhật màu Theme) ---
   Widget? _buildUserIcon() {
-    // TRƯỜNG HỢP 1: Chưa đăng nhập -> Hiện Icon User cũ (Click vào để login)
     final user = Provider.of<UserProvider>(context).user;
+    final theme = Theme.of(context);
     if (user == null) return null;
 
-    // TRƯỜNG HỢP 2: Đã đăng nhập -> Hiện Avatar Menu (Slide down)
     return PopupMenuButton<String>(
       onSelected: (value) {
         if (value == 'profile') {
-              // smooth push
-              AppRouter.push(context, ProfileScreen(user: user));
+          AppRouter.push(context, ProfileScreen(user: user));
         } else if (value == 'logout') {
           _handleLogout();
         }
       },
-      color: const Color(0xFF353535),
+      color: theme.colorScheme.surface, // Màu Popup theo theme
       offset: const Offset(0, 50),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'profile',
-          child: Row(children: [Icon(Icons.person, color: AppColors.primaryBlue), SizedBox(width: 10), Text("Hồ sơ cá nhân", style: TextStyle(color: Colors.white))]),
+          child: Row(children: [
+            Icon(Icons.person, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            Text("Hồ sơ", style: TextStyle(color: theme.textTheme.bodyLarge?.color))
+          ]),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'logout',
-          child: Row(children: [Icon(Icons.logout, color: Colors.redAccent), SizedBox(width: 10), Text("Đăng xuất", style: TextStyle(color: Colors.white))]),
+          child: Row(children: [
+            const Icon(Icons.logout, color: Colors.redAccent),
+            const SizedBox(width: 10),
+            Text("Đăng xuất", style: TextStyle(color: theme.textTheme.bodyLarge?.color))
+          ]),
         ),
       ],
-      // Icon đại diện
       child: Container(
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primaryBlue, width: 2),
+          border: Border.all(color: theme.colorScheme.primary, width: 2),
         ),
         child: CircleAvatar(
-          radius: 16, // Nhỏ gọn vừa AppBar
-          backgroundColor: Colors.grey[800],
+          radius: 16,
+          backgroundColor: Colors.grey[400],
           backgroundImage: (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
               ? (user.avatarUrl!.startsWith('http')
-                  ? CachedNetworkImageProvider(user.avatarUrl!)
-                  : MemoryImage(base64Decode(user.avatarUrl!)))
+              ? CachedNetworkImageProvider(user.avatarUrl!)
+              : MemoryImage(base64Decode(user.avatarUrl!)))
               : null,
           child: (user.avatarUrl == null || user.avatarUrl!.isEmpty)
               ? Text(
-                  user.username[0].toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                )
+            user.username[0].toUpperCase(),
+            style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+          )
               : null,
         ),
       ),
     );
   }
 
-  // Xây dựng màn hình hiện tại
   Widget _buildCurrentScreen() {
+    final user = Provider.of<UserProvider>(context).user;
     switch (_selectedIndex) {
       case 0:
-        // HomeScreen: pass current user from provider
-        final user = Provider.of<UserProvider>(context).user;
-        if (!widget.showNavBar) return HomeScreen(currentUser: user);
-        return const CheckInScreen();
+        return widget.showNavBar ? const CheckInScreen() : HomeScreen(currentUser: user);
       case 1:
         return const HistoryScreen();
       case 2:
         return const AnalysisScreen();
       default:
-        final user = Provider.of<UserProvider>(context).user;
         return HomeScreen(currentUser: user);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Khởi tạo theme để dùng bên dưới
+
     return WillPopScope(
       onWillPop: () async {
-        // Nếu không phải tab Check-in, quay về tab Check-in
         if (_selectedIndex != 0) {
           setState(() => _selectedIndex = 0);
           return false;
         }
-        // Nếu đang ở tab Check-in -> Cho phép thoát màn hình này để về HomeScreen
-        return true; 
+        return true;
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor, // Đổi màu nền tự động
         appBar: CustomAppBar(
           actionWidget: _buildUserIcon(),
           onLogoTap: () {
@@ -211,20 +204,21 @@ class _MainScreenState extends State<MainScreen> {
 
         bottomNavigationBar: widget.showNavBar
             ? BottomNavigationBar(
-                backgroundColor: const Color(0xFF2B2B2B),
-                selectedItemColor: AppColors.primaryBlue,
-                unselectedItemColor: Colors.white70,
-                showSelectedLabels: false,
-                showUnselectedLabels: false,
-                iconSize: 28,
-                currentIndex: _selectedIndex,
-                onTap: _onItemTapped,
-                items: const [
-                  BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-                  BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Calendar'),
-                  BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Chart'),
-                ],
-              )
+          backgroundColor: theme.bottomNavigationBarTheme.backgroundColor, // Theo Theme
+          selectedItemColor: theme.bottomNavigationBarTheme.selectedItemColor, // Xanh hoặc Vàng
+          unselectedItemColor: theme.bottomNavigationBarTheme.unselectedItemColor,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          iconSize: 28,
+          elevation: 10,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Calendar'),
+            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Chart'),
+          ],
+        )
             : null,
       ),
     );
