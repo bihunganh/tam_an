@@ -273,7 +273,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           _legendItem(AppColors.moodMad, 'Tức giận', theme),
           _legendItem(AppColors.moodSad, 'Buồn', theme),
-          _legendItem(AppColors.moodAnxiety, 'Lo âu', theme),
+          _legendItem(AppColors.moodAnxiety, 'Căng thẳng', theme),
           _legendItem(AppColors.moodNeutral, 'Bình thường', theme),
           _legendItem(AppColors.moodFun, 'Vui', theme),
           _legendItem(AppColors.moodHappy, 'Hạnh phúc', theme),

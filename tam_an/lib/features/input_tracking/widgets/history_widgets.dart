@@ -102,7 +102,7 @@ class _EmotionDonutChartState extends State<EmotionDonutChart> {
                   children: [
                     _buildLegendItem(AppColors.moodMad, "Tức giận", theme),
                     _buildLegendItem(AppColors.moodSad, "Buồn", theme),
-                    _buildLegendItem(AppColors.moodAnxiety, "Lo âu", theme),
+                    _buildLegendItem(AppColors.moodAnxiety, "Căng thẳng", theme),
                     _buildLegendItem(AppColors.moodNeutral, "Bình thường", theme),
                     _buildLegendItem(AppColors.moodFun, "Vui vẻ", theme),
                     _buildLegendItem(AppColors.moodHappy, "Hạnh phúc", theme),
@@ -172,11 +172,12 @@ class _MoodItem {
 
 class _DailyEmotionSummaryState extends State<DailyEmotionSummary> {
   late PageController _pageController;
-  int _currentPage = 2;
+  // Thay đổi: Mặc định là index 3 (Bình thường) hoặc tạo index riêng cho "Chưa có dữ liệu"
+  int _currentPage = 3; 
 
   final List<_MoodItem> _moods = [
     _MoodItem("Buồn", Icons.sentiment_very_dissatisfied, AppColors.moodSad),
-    _MoodItem("Lo âu", Icons.sentiment_dissatisfied, AppColors.moodAnxiety),
+    _MoodItem("Căng thẳng", Icons.sentiment_dissatisfied, AppColors.moodAnxiety),
     _MoodItem("Tức giận", Icons.sentiment_very_dissatisfied_outlined, AppColors.moodMad),
     _MoodItem("Bình thường", Icons.sentiment_neutral, AppColors.moodNeutral),
     _MoodItem("Vui vẻ", Icons.sentiment_satisfied_alt, AppColors.moodFun),
@@ -234,6 +235,7 @@ class _DailyEmotionSummaryState extends State<DailyEmotionSummary> {
               builder: (context, snapshot) {
                 final daily = (snapshot.data ?? []).where((c) => _localIsSameDay(c.timestamp, widget.selectedDay)).toList();
 
+                // Logic xử lý khi có dữ liệu
                 if (daily.isNotEmpty) {
                   final freq = <int, int>{};
                   for (final c in daily) {
@@ -256,6 +258,25 @@ class _DailyEmotionSummaryState extends State<DailyEmotionSummary> {
                       setState(() => _currentPage = indexOfMood);
                     }
                   });
+                } else {
+                   // Logic xử lý khi KHÔNG có dữ liệu: Đặt về "Bình thường" (index 3)
+                   WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    if (_currentPage != 3) {
+                       _pageController.jumpToPage(3); // Hoặc animateToPage
+                       setState(() => _currentPage = 3);
+                    }
+                  });
+                }
+
+                // Nếu không có dữ liệu, hiển thị thông báo thay vì PageView (Tùy chọn)
+                if (daily.isEmpty) {
+                    return Center(
+                        child: Text(
+                            "Chưa có dữ liệu",
+                            style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5)),
+                        ),
+                    );
                 }
 
                 return PageView.builder(
@@ -283,7 +304,7 @@ class _DailyEmotionSummaryState extends State<DailyEmotionSummary> {
                           child: Transform.scale(
                             scale: scale,
                             child: Container(
-                              width: 70, height: 70,
+                              width: 80, height: 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: isSelected
@@ -311,18 +332,27 @@ class _DailyEmotionSummaryState extends State<DailyEmotionSummary> {
             ),
           ),
           const SizedBox(height: 15),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Text(
-              _moods[_currentPage].name,
-              key: ValueKey<int>(_currentPage),
-              style: TextStyle(
-                color: _moods[_currentPage].color,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          // Chỉ hiển thị tên cảm xúc khi có dữ liệu check-in (hoặc xử lý hiển thị khác)
+           StreamBuilder<List<CheckInModel>>(
+              stream: widget.userId == null ? const Stream.empty() : _service.getCheckInHistory(widget.userId!),
+              builder: (context, snapshot) {
+                  final daily = (snapshot.data ?? []).where((c) => _localIsSameDay(c.timestamp, widget.selectedDay)).toList();
+                  if (daily.isEmpty) return const SizedBox.shrink(); // Ẩn tên nếu chưa có dữ liệu
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      _moods[_currentPage].name,
+                      key: ValueKey<int>(_currentPage),
+                      style: TextStyle(
+                        color: _moods[_currentPage].color,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+              }
+           ),
         ],
       ),
     );
