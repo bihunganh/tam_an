@@ -5,7 +5,7 @@ import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:tam_an/core/services/notification_service.dart';
 // Import các file core
 import 'core/constants/app_colors.dart';
 import 'core/providers/user_provider.dart';
@@ -19,6 +19,14 @@ import 'features/onboarding/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Khởi tạo thông báo
+  final notificationService = NotificationService();
+  await notificationService.init();
+
+  // Kích hoạt các lịch nhắc nhở
+  await notificationService.scheduleDailyReminder();
+  await notificationService.scheduleWeeklyInsights();
 
   // Khóa màn hình dọc
   SystemChrome.setPreferredOrientations([
