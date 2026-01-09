@@ -5,11 +5,13 @@ import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tam_an/core/services/notification_service.dart';
-// Import các file core
+import 'package:google_fonts/google_fonts.dart'; // Để dùng font Nunito
+
+// Import các file core & providers
 import 'core/constants/app_colors.dart';
 import 'core/providers/user_provider.dart';
-import 'core/providers/theme_provider.dart'; // Đảm bảo bạn đã tạo file này
+import 'core/providers/theme_provider.dart';
+import 'core/services/notification_service.dart';
 
 // Import các màn hình
 import 'main_screen.dart';
@@ -20,29 +22,31 @@ import 'features/onboarding/onboarding_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Khởi tạo thông báo
+  // 1. Cấu hình thanh trạng thái trong suốt cho Xiaomi Redmi Note 11T Pro
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+  ));
+
+  // 2. Khởi tạo Thông báo
   final notificationService = NotificationService();
   await notificationService.init();
-
-  // Kích hoạt các lịch nhắc nhở
   await notificationService.scheduleDailyReminder();
   await notificationService.scheduleWeeklyInsights();
 
-  // Khóa màn hình dọc
-  SystemChrome.setPreferredOrientations([
+  // 3. Khóa màn hình dọc
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Khởi tạo định dạng ngày tháng
-  await initializeDateFormatting();
-
-  // Khởi tạo Firebase
+  // 4. Khởi tạo Firebase và Định dạng ngày tháng
+  await initializeDateFormatting('vi_VN', null);
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // LOGIC KIỂM TRA ONBOARDING & THEME
+  // 5. Kiểm tra Onboarding
   final prefs = await SharedPreferences.getInstance();
   final bool isOnboardingCompleted = prefs.getBool('onboarding_seen') ?? false;
 
@@ -50,9 +54,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()..loadUser()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()), // Quản lý Sáng/Tối
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      // Truyền trạng thái vào App
       child: TamAnApp(showOnboarding: !isOnboardingCompleted),
     ),
   );
@@ -65,84 +68,90 @@ class TamAnApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Lắng nghe trạng thái từ ThemeProvider
     final themeProvider = context.watch<ThemeProvider>();
 
     return MaterialApp(
       title: 'Tâm An',
       debugShowCheckedModeBanner: false,
 
-      // --- CẤU HÌNH THEME SÁNG (Dựa trên Ảnh 2) ---
+      // --- CẤU HÌNH THEME SÁNG (Zen Morning) ---
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: Colors.white,
+        // Sử dụng font Nunito để tạo cảm giác nhẹ nhàng, chữa lành
+        textTheme: GoogleFonts.nunitoTextTheme(ThemeData.light().textTheme),
+        scaffoldBackgroundColor: AppColors.lightBackground,
         colorScheme: const ColorScheme.light(
-          primary: Color(0xFF3366FF), // Màu xanh chủ đạo ở Ảnh 2
+          primary: AppColors.lightPrimary,
           secondary: Color(0xFF5C85FF),
-          surface: Color(0xFFF5F7FA),
+          surface: Color(0xFFF8FAFC),
           onPrimary: Colors.white,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          titleTextStyle: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w800),
+          centerTitle: false,
+          titleTextStyle: TextStyle(color: Colors.black, fontSize: 22, fontWeight: FontWeight.w900),
           iconTheme: IconThemeData(color: Colors.black),
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Colors.white,
-          selectedItemColor: Color(0xFF3366FF),
-          unselectedItemColor: Colors.grey,
+        // SỬA LỖI TẠI ĐÂY: Thay CardTheme bằng CardThemeData
+        cardTheme: CardThemeData(
+          color: Colors.white,
+          elevation: 2,
+          shadowColor: Colors.black.withOpacity(0.05),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3366FF),
-              foregroundColor: Colors.white,
-              shape: const StadiumBorder()
+            backgroundColor: AppColors.lightPrimary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 54),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
           ),
         ),
       ),
 
-      // --- CẤU HÌNH THEME TỐI (Giữ nguyên từ code cũ của bạn - Ảnh 1) ---
+      // --- CẤU HÌNH THEME TỐI (Deep Night) ---
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
-        fontFamily: 'Roboto',
+        textTheme: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme),
         scaffoldBackgroundColor: AppColors.background,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFFE14D), // Màu vàng nút bấm ở Ảnh 1
+          primary: AppColors.darkPrimary,
           secondary: AppColors.primaryBlueLight,
-          background: AppColors.background,
           surface: Color(0xFF1B1B1C),
           onPrimary: Colors.black,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.background,
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+          centerTitle: false,
+          titleTextStyle: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF1B1B1C),
-          selectedItemColor: Color(0xFFFFE14D),
-          unselectedItemColor: Colors.white70,
+        // SỬA LỖI TẠI ĐÂY: Thay CardTheme bằng CardThemeData
+        cardTheme: CardThemeData(
+          color: const Color(0xFF1B1B1C),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFE14D),
-              foregroundColor: Colors.black,
-              shape: const StadiumBorder()
+            backgroundColor: AppColors.darkPrimary,
+            foregroundColor: Colors.black,
+            minimumSize: const Size(double.infinity, 54),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
           ),
         ),
       ),
 
-      // Quyết định dùng Theme nào dựa trên Provider
-      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-
-      home: showOnboarding ? const OnboardingScreen() : const MainScreen(),
+      themeMode: themeProvider.themeMode,
+      home: showOnboarding ? const OnboardingScreen() : const MainScreen(showNavBar: true),
 
       routes: {
-        '/home': (context) => const MainScreen(showNavBar: false),
+        '/home': (context) => const MainScreen(showNavBar: true),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
       },
