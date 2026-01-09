@@ -8,6 +8,7 @@ plugins {
 android {
     // Đảm bảo namespace trùng với applicationId của bạn
     namespace = "com.example.tam_an"
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     // Giữ mức 36 để các thư viện (shared_prefs, image_picker) không báo lỗi
