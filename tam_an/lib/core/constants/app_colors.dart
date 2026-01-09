@@ -1,30 +1,34 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Dark Theme Colors
-  static const Color background = Color(0xFF0B0B0C);
-  static const Color primaryBlue = Color(0xFF0A84FF);
-  static const Color primaryBlueLight = Color(0xFF5AC8FA);
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textLight = Color(0xFFBFC8D8);
-  static const Color buttonDark = Color(0xFF111214);
-  static const Color successGreen = Color(0xFF34C759);
-  static const Color cardColor = Color.fromARGB(255, 35, 35, 35);
-  static const Color darkBg = Color(0xFF1A1A1A);
-  static const Color darkPrimary = Color(0xFFFFE14D);
+  // Common Colors
+  static const Color primaryWarm = Color(0xFFFF9F66); // Warmer Primary
+  static const Color accentWarm = Color(0xFFFFCC80);
+  
+  // Dark Theme Colors (Midnight Blue)
+  static const Color midnightBlue = Color(0xFF0A0E21); // Deep Midnight Blue
+  static const Color darkSurface = Color(0xFF1D1E33);
+  static const Color darkTextPrimary = Color(0xFFE1E1E1);
+  static const Color darkTextSecondary = Color(0xFFB0B0B0);
+  static const Color darkAccent = Color(0xFFFFD740); // Aurora/Star like gold
 
+  // Light Theme Colors (Warm Off-White)
+  static const Color warmOffWhite = Color(0xFFFDFCF0); // Soft, warm off-white
+  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightTextPrimary = Color(0xFF2C2C2C);
+  static const Color lightTextSecondary = Color(0xFF757575);
+  static const Color lightPrimary = Color(0xFFFF7043); // Warmer orange-ish
 
-  // Light Theme Colors
-  static const Color lightBackground = Color(0xFFFFFFFF);
-  static const Color lightTextPrimary = Color(0xFF000000);
-  static const Color lightBg = Color(0xFFFFFFFF);
-  static const Color lightPrimary = Color(0xFF3366FF);
+  // Mood Palette (Enhanced for warmth)
+  static const Color moodMad = Color(0xFFE57373);
+  static const Color moodSad = Color(0xFF90CAF9);
+  static const Color moodNeutral = Color(0xFFAED581);
+  static const Color moodHappy = Color(0xFFFFF176);
+  static const Color moodFun = Color(0xFFFFB74D);
+  static const Color moodAnxiety = Color(0xFFB39DDB);
 
-  // Mood Palette
-  static const Color moodMad = Color(0xFFFF3B30);
-  static const Color moodSad = Color.fromARGB(255, 255, 0, 179);
-  static const Color moodNeutral = Color(0xFF5AC8FA);
-  static const Color moodHappy = Color(0xFF4CD964);
-  static const Color moodFun = Color(0xFFFF9500);
-  static const Color moodAnxiety = Color(0xFFAF52DE);
+  // For backward compatibility or specific uses
+  static const Color background = midnightBlue;
+  static const Color primaryBlue = Color(0xFF3F51B5);
+  static const Color primaryBlueLight = Color(0xFF7986CB);
 }

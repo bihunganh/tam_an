@@ -89,7 +89,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     final RenderBox iconBox = _iconKey.currentContext!.findRenderObject() as RenderBox;
     final Offset iconPos = iconBox.localToGlobal(Offset.zero);
     final Size iconSize = iconBox.size;
-    final theme = Theme.of(context); // Lấy theme cho Overlay
+    final theme = Theme.of(context);
 
     const double menuWidth = 200.0;
     double left = iconPos.dx + iconSize.width - menuWidth;
@@ -117,34 +117,36 @@ class _CustomAppBarState extends State<CustomAppBar>
                     child: Container(
                       width: menuWidth,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface, // Màu nền Dropdown theo Theme
-                        borderRadius: BorderRadius.circular(10),
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
                         ],
-                        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildDropdownItem(
-                            icon: Icons.login,
-                            label: 'Đăng nhập',
-                            onTap: _navigateToLogin,
-                            theme: theme,
-                            hasDivider: true,
-                          ),
-                          _buildDropdownItem(
-                            icon: Icons.person_add,
-                            label: 'Đăng ký',
-                            onTap: _navigateToSignup,
-                            theme: theme,
-                          ),
-                        ],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildDropdownItem(
+                              icon: Icons.login,
+                              label: 'Đăng nhập',
+                              onTap: _navigateToLogin,
+                              theme: theme,
+                              hasDivider: true,
+                            ),
+                            _buildDropdownItem(
+                              icon: Icons.person_add,
+                              label: 'Đăng ký',
+                              onTap: _navigateToSignup,
+                              theme: theme,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -168,20 +170,20 @@ class _CustomAppBarState extends State<CustomAppBar>
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
-          border: hasDivider ? Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.1))) : null,
+          border: hasDivider ? Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.05))) : null,
         ),
         child: Row(
           children: [
-            Icon(icon, color: theme.colorScheme.primary, size: 18),
-            const SizedBox(width: 12),
+            Icon(icon, color: theme.colorScheme.primary, size: 20),
+            const SizedBox(width: 14),
             Text(
               label,
               style: TextStyle(
-                color: theme.textTheme.bodyLarge?.color,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -195,14 +197,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     final theme = Theme.of(context);
 
     return Container(
-      color: theme.scaffoldBackgroundColor, // Nền AppBar tự đổi màu
+      color: Colors.transparent,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: SafeArea(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Logo "Tâm An"
               GestureDetector(
                 onTap: () {
                   _removeOverlay();
@@ -211,15 +212,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                 child: Text(
                   'Tâm An',
                   style: TextStyle(
-                    color: theme.textTheme.titleLarge?.color ?? theme.colorScheme.primary,
-                    fontSize: 24,
+                    color: theme.colorScheme.primary,
+                    fontSize: 26,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 4.0,
+                    letterSpacing: 2.0,
                   ),
                 ),
               ),
 
-              // Logic hiển thị Icon/Action Widget
               if (widget.actionWidget != null)
                 widget.actionWidget!
               else
@@ -227,19 +227,26 @@ class _CustomAppBarState extends State<CustomAppBar>
                   onTap: _toggleDropdown,
                   child: Container(
                     key: _iconKey,
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _isDropdownOpen
                           ? theme.colorScheme.primary.withOpacity(0.1)
-                          : Colors.transparent,
+                          : theme.colorScheme.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Icon(
-                      Icons.person,
+                      Icons.person_outline,
                       color: _isDropdownOpen
                           ? theme.colorScheme.primary
-                          : theme.iconTheme.color?.withOpacity(0.7),
-                      size: 28,
+                          : theme.colorScheme.onSurface.withOpacity(0.7),
+                      size: 26,
                     ),
                   ),
                 ),

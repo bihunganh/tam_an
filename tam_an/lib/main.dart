@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Import các file core
 import 'core/constants/app_colors.dart';
 import 'core/providers/user_provider.dart';
-import 'core/providers/theme_provider.dart'; // Đảm bảo bạn đã tạo file này
+import 'core/providers/theme_provider.dart';
 
 // Import các màn hình
 import 'main_screen.dart';
@@ -34,7 +34,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // LOGIC KIỂM TRA ONBOARDING & THEME
   final prefs = await SharedPreferences.getInstance();
   final bool isOnboardingCompleted = prefs.getBool('onboarding_seen') ?? false;
 
@@ -42,9 +41,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()..loadUser()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()), // Quản lý Sáng/Tối
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      // Truyền trạng thái vào App
       child: TamAnApp(showOnboarding: !isOnboardingCompleted),
     ),
   );
@@ -57,78 +55,110 @@ class TamAnApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Lắng nghe trạng thái từ ThemeProvider
     final themeProvider = context.watch<ThemeProvider>();
 
     return MaterialApp(
       title: 'Tâm An',
       debugShowCheckedModeBanner: false,
 
-      // --- CẤU HÌNH THEME SÁNG (Dựa trên Ảnh 2) ---
+      // --- CẤU HÌNH THEME SÁNG (Warm & Professional) ---
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: Colors.white,
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFF3366FF), // Màu xanh chủ đạo ở Ảnh 2
-          secondary: Color(0xFF5C85FF),
-          surface: Color(0xFFF5F7FA),
+        fontFamily: 'Roboto', 
+        scaffoldBackgroundColor: AppColors.warmOffWhite,
+        colorScheme: ColorScheme.light(
+          primary: AppColors.lightPrimary,
+          secondary: AppColors.primaryWarm,
+          surface: AppColors.lightSurface,
           onPrimary: Colors.white,
+          onSurface: AppColors.lightTextPrimary,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          titleTextStyle: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w800),
-          iconTheme: IconThemeData(color: Colors.black),
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            color: AppColors.lightTextPrimary, 
+            fontSize: 20, 
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+          iconTheme: IconThemeData(color: AppColors.lightTextPrimary),
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Colors.white,
-          selectedItemColor: Color(0xFF3366FF),
-          unselectedItemColor: Colors.grey,
+        cardTheme: CardThemeData(
+          color: AppColors.lightSurface,
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          margin: const EdgeInsets.symmetric(vertical: 8),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3366FF),
-              foregroundColor: Colors.white,
-              shape: const StadiumBorder()
+            backgroundColor: AppColors.lightPrimary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
+        ),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
         ),
       ),
 
-      // --- CẤU HÌNH THEME TỐI (Giữ nguyên từ code cũ của bạn - Ảnh 1) ---
+      // --- CẤU HÌNH THEME TỐI (Midnight Blue & Aurora) ---
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
         fontFamily: 'Roboto',
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFFE14D), // Màu vàng nút bấm ở Ảnh 1
-          secondary: AppColors.primaryBlueLight,
-          background: AppColors.background,
-          surface: Color(0xFF1B1B1C),
+        scaffoldBackgroundColor: AppColors.midnightBlue,
+        colorScheme: ColorScheme.dark(
+          primary: AppColors.primaryWarm,
+          secondary: AppColors.darkAccent,
+          surface: AppColors.darkSurface,
           onPrimary: Colors.black,
+          onSurface: AppColors.darkTextPrimary,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.background,
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            color: AppColors.darkTextPrimary, 
+            fontSize: 20, 
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+          iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF1B1B1C),
-          selectedItemColor: Color(0xFFFFE14D),
-          unselectedItemColor: Colors.white70,
+        cardTheme: CardThemeData(
+          color: AppColors.darkSurface,
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          margin: const EdgeInsets.symmetric(vertical: 8),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFE14D),
-              foregroundColor: Colors.black,
-              shape: const StadiumBorder()
+            backgroundColor: AppColors.primaryWarm,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
+        ),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
         ),
       ),
 
-      // Quyết định dùng Theme nào dựa trên Provider
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
       home: showOnboarding ? const OnboardingScreen() : const MainScreen(),
