@@ -66,6 +66,37 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  // --- HÀM XỬ LÝ ĐĂNG XUẤT (Khôi phục) ---
+  void _handleLogout() {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Đăng xuất", style: TextStyle(color: peachColor, fontWeight: FontWeight.bold)),
+        content: const Text("Bạn có chắc chắn muốn đăng xuất không?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _authService.signOut();
+              if (mounted) {
+                Provider.of<UserProvider>(context, listen: false).clear();
+                AppRouter.pushAndRemoveUntil(context, const LoginScreen());
+              }
+            },
+            child: const Text("Đồng ý", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // --- 1. TRANG TRÍ PHÍA TRÊN: QUOTE & STREAK ---
   Widget _buildTopHealingSection(ThemeData theme) {
     final List<String> weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -122,7 +153,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // --- 2. NÚT CHECK-IN NHỊP THỞ (ĐÃ ĐỒNG BỘ CAM ĐÀO) ---
+  // --- 2. NÚT CHECK-IN NHỊP THỞ ---
   Widget _buildBreathingButton(ThemeData theme) {
     return Animate(
       onPlay: (controller) => controller.repeat(reverse: true),
@@ -134,7 +165,7 @@ class _MainScreenState extends State<MainScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
-              colors: [peachColor, Color(0xFFFFAB91)], // Gradient từ cam đào sang cam nhạt
+              colors: [peachColor, Color(0xFFFFAB91)],
               begin: Alignment.topLeft, end: Alignment.bottomRight,
             ),
             boxShadow: [
@@ -182,7 +213,6 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = Provider.of<UserProvider>(context).user;
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       extendBody: true,
@@ -193,7 +223,6 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: Stack(
         children: [
-          // Hiệu ứng Blob nền cho cả 2 chế độ
           Positioned(top: -100, left: -50, child: Container(width: 300, height: 300, decoration: BoxDecoration(shape: BoxShape.circle, color: peachColor.withOpacity(0.15)))),
           Positioned(bottom: 100, right: -100, child: Container(width: 400, height: 400, decoration: BoxDecoration(shape: BoxShape.circle, color: peachColor.withOpacity(0.1)))),
           BackdropFilter(filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70), child: Container(color: Colors.transparent)),
@@ -210,7 +239,66 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // --- CÁC PHẦN PHỤ TRỢ ---
+  // --- ICON NGƯỜI DÙNG VỚI MENU LỰA CHỌN (Khôi phục) ---
+  Widget _buildUserIcon(ThemeData theme, dynamic user) {
+    if (user == null) return const SizedBox();
+
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        if (value == 'profile') {
+          AppRouter.push(context, ProfileScreen(user: user));
+        } else if (value == 'logout') {
+          _handleLogout();
+        }
+      },
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      offset: const Offset(0, 50),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'profile',
+          child: Row(
+            children: [
+              const Icon(Icons.person_outline, color: peachColor, size: 20),
+              const SizedBox(width: 10),
+              Text("Hồ sơ", style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: const [
+              Icon(Icons.logout, color: Colors.redAccent, size: 20),
+              const SizedBox(width: 10),
+              Text("Đăng xuất", style: TextStyle(color: Colors.redAccent)),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        margin: const EdgeInsets.only(right: 15),
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: peachColor.withOpacity(0.5), width: 1.5)
+        ),
+        child: CircleAvatar(
+          radius: 16,
+          backgroundColor: Colors.grey[300],
+          backgroundImage: (user.avatarUrl?.isNotEmpty ?? false)
+              ? (user.avatarUrl!.startsWith('http')
+              ? CachedNetworkImageProvider(user.avatarUrl!)
+              : MemoryImage(base64Decode(user.avatarUrl!)) as ImageProvider)
+              : null,
+          child: (user.avatarUrl?.isEmpty ?? true)
+              ? Text(user.username[0].toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: peachColor))
+              : null,
+        ),
+      ),
+    );
+  }
+
   Widget _buildGlassBottomBar(ThemeData theme) {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -229,7 +317,7 @@ class _MainScreenState extends State<MainScreen> {
             elevation: 0,
             currentIndex: _selectedIndex,
             onTap: (index) => setState(() => _selectedIndex = index),
-            selectedItemColor: peachColor, // Tab được chọn luôn có màu Cam đào
+            selectedItemColor: peachColor,
             unselectedItemColor: theme.hintColor.withOpacity(0.4),
             showSelectedLabels: false,
             showUnselectedLabels: false,
@@ -240,24 +328,6 @@ class _MainScreenState extends State<MainScreen> {
               BottomNavigationBarItem(icon: Icon(Icons.insights_rounded, size: 28), label: ''),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserIcon(ThemeData theme, dynamic user) {
-    if (user == null) return const SizedBox();
-    return GestureDetector(
-      onTap: () => AppRouter.push(context, ProfileScreen(user: user)), // Nhấn vào là đi sửa hồ sơ luôn
-      child: Container(
-        margin: const EdgeInsets.only(right: 15),
-        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: peachColor.withOpacity(0.5), width: 1.5)),
-        child: CircleAvatar(
-          radius: 18, backgroundColor: Colors.grey[300],
-          backgroundImage: (user.avatarUrl?.isNotEmpty ?? false)
-              ? (user.avatarUrl!.startsWith('http') ? CachedNetworkImageProvider(user.avatarUrl!) : MemoryImage(base64Decode(user.avatarUrl!)) as ImageProvider)
-              : null,
-          child: (user.avatarUrl?.isEmpty ?? true) ? Text(user.username[0].toUpperCase(), style: const TextStyle(fontSize: 12)) : null,
         ),
       ),
     );

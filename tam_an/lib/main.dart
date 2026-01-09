@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Thêm để kiểm tra trạng thái login
 import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tam_an/core/services/notification_service.dart';
+
 // Import các file core
 import 'core/constants/app_colors.dart';
 import 'core/providers/user_provider.dart';
@@ -48,7 +50,8 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()..loadUser()),
+        // Khởi tạo UserProvider nhưng không gọi loadUser() ngay tại đây để tránh xung đột
+        ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: TamAnApp(showOnboarding: !isOnboardingCompleted),
@@ -58,6 +61,7 @@ void main() async {
 
 class TamAnApp extends StatelessWidget {
   final bool showOnboarding;
+  static const Color peachColor = Color(0xFFFF8A65); // Mã màu cam đào chủ đạo
 
   const TamAnApp({super.key, required this.showOnboarding});
 
@@ -69,107 +73,66 @@ class TamAnApp extends StatelessWidget {
       title: 'Tâm An',
       debugShowCheckedModeBanner: false,
 
-      // --- CẤU HÌNH THEME SÁNG (Warm & Professional) ---
+      // --- THEME SÁNG (Tone Cam đào chuyên nghiệp) ---
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: true,
-        fontFamily: 'Roboto', 
-        scaffoldBackgroundColor: AppColors.warmOffWhite,
+        fontFamily: 'Roboto',
+        scaffoldBackgroundColor: const Color(0xFFFFF9F7), // Nền cam cực nhạt
         colorScheme: ColorScheme.light(
-          primary: AppColors.lightPrimary,
-          secondary: AppColors.primaryWarm,
-          surface: AppColors.lightSurface,
+          primary: peachColor,
+          secondary: peachColor.withOpacity(0.7),
+          surface: Colors.white,
           onPrimary: Colors.white,
-          onSurface: AppColors.lightTextPrimary,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            color: AppColors.lightTextPrimary, 
-            fontSize: 20, 
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-          iconTheme: IconThemeData(color: AppColors.lightTextPrimary),
-        ),
-        cardTheme: CardThemeData(
-          color: AppColors.lightSurface,
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          margin: const EdgeInsets.symmetric(vertical: 8),
+          onSurface: Colors.black87,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.lightPrimary,
+            backgroundColor: peachColor,
             foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
-        ),
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
         ),
       ),
 
-      // --- CẤU HÌNH THEME TỐI (Midnight Blue & Aurora) ---
+      // --- THEME TỐI (Giữ nguyên phong cách Midnight) ---
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
-        fontFamily: 'Roboto',
         scaffoldBackgroundColor: AppColors.midnightBlue,
         colorScheme: ColorScheme.dark(
-          primary: AppColors.primaryWarm,
+          primary: peachColor, // Dùng cam đào làm điểm nhấn cho chế độ tối
           secondary: AppColors.darkAccent,
           surface: AppColors.darkSurface,
-          onPrimary: Colors.black,
+          onPrimary: Colors.white,
           onSurface: AppColors.darkTextPrimary,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            color: AppColors.darkTextPrimary, 
-            fontSize: 20, 
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-          iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
-        ),
-        cardTheme: CardThemeData(
-          color: AppColors.darkSurface,
-          elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          margin: const EdgeInsets.symmetric(vertical: 8),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryWarm,
-            foregroundColor: Colors.black,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-          ),
-        ),
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
         ),
       ),
 
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
-      home: showOnboarding ? const OnboardingScreen() : const MainScreen(),
+      // --- XỬ LÝ LUỒNG ĐIỀU HƯỚNG TỰ ĐỘNG ---
+      home: showOnboarding
+          ? const OnboardingScreen()
+          : StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // Nếu đang kiểm tra trạng thái login
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator(color: peachColor)));
+          }
+
+          // Nếu đã đăng nhập (User != null)
+          if (snapshot.hasData) {
+            // Gọi load dữ liệu Profile từ Provider
+            context.read<UserProvider>().loadUser();
+            return const MainScreen();
+          }
+
+          // Nếu chưa đăng nhập hoặc đã đăng xuất
+          return const LoginScreen();
+        },
+      ),
 
       routes: {
         '/home': (context) => const MainScreen(showNavBar: false),
