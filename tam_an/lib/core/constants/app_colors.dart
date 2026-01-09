@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Màu nền chính (Dark Mode Background)
-  static const Color background = Color(0xFF121212); // Đen tuyền
-  static const Color surface = Color(0xFF1C1C1E);    // Xám đen (cho thẻ, card)
+  // Dark Theme Colors
+  static const Color background = Color(0xFF0B0B0C);
+  static const Color primaryBlue = Color(0xFF0A84FF);
+  static const Color primaryBlueLight = Color(0xFF5AC8FA);
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textLight = Color(0xFFBFC8D8);
+  static const Color buttonDark = Color(0xFF111214);
+  static const Color successGreen = Color(0xFF34C759);
+  static const Color cardColor = Color(0xFF383838);
 
-  // Màu chữ
-  static const Color textPrimary = Color(0xFFFFFFFF);      // Trắng
-  static const Color textSecondary = Color(0xFF8E8E93);    // Xám nhạt
 
-  // Màu cảm xúc (Mood Colors - Pastel)
-  static const Color moodAngry = Color(0xFFE57373);     // Đỏ
-  static const Color moodStress = Color(0xFF9575CD);    // Tím
-  static const Color moodSad = Color(0xFF64B5F6);       // Xanh dương
-  static const Color moodHappy = Color(0xFF81C784);     // Xanh lá
-  static const Color moodJoy = Color(0xFFFFB74D);       // Cam vàng
+  // Light Theme Colors
+  static const Color lightBackground = Color(0xFFFFFFFF);
+  static const Color lightTextPrimary = Color(0xFF000000);
 
-  // Màu hành động (Buttons)
-  static const Color primary = Color(0xFFFFFFFF);       // Nút chính màu trắng
-  static const Color accent = Color(0xFF64FFDA);        // Màu nhấn (Teal)
+  // Mood Palette
+  static const Color moodMad = Color(0xFFFF3B30);
+  static const Color moodSad = Color.fromARGB(255, 255, 0, 179);
+  static const Color moodNeutral = Color(0xFF5AC8FA);
+  static const Color moodHappy = Color(0xFF4CD964);
+  static const Color moodFun = Color(0xFFFF9500);
+  static const Color moodAnxiety = Color(0xFFAF52DE);
 }
