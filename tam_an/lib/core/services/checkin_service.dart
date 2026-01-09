@@ -1,79 +1,101 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/checkin_model.dart';
+import 'notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class CheckInService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Hàm thêm Check-in mới
+  // Hàm thêm Check-in mới (Đã nâng cấp logic Streak và Notification)
   Future<void> addNewCheckIn(CheckInModel checkIn) async {
     final userRef = _firestore.collection('users').doc(checkIn.userId);
-    final checkInRef = userRef.collection('checkin_history').doc(); // Tự sinh ID mới
+    final checkInRef = userRef.collection('checkin_history').doc();
 
-    // Sử dụng Transaction để đảm bảo tính toàn vẹn dữ liệu
-    // (Hoặc lưu cả 2 hoặc không lưu cái nào nếu lỗi)
     await _firestore.runTransaction((transaction) async {
-      // 1. Đọc dữ liệu User hiện tại để lấy thống kê cũ
       DocumentSnapshot userSnapshot = await transaction.get(userRef);
-      
-      if (!userSnapshot.exists) {
-        throw Exception("Người dùng không tồn tại!");
-      }
+      if (!userSnapshot.exists) throw Exception("Người dùng không tồn tại!");
 
       Map<String, dynamic> userData = userSnapshot.data() as Map<String, dynamic>;
 
-      // Lấy các chỉ số cũ (nếu chưa có thì mặc định là 0 hoặc rỗng)
       int currentTotal = userData['totalCheckins'] ?? 0;
       Map<String, dynamic> currentMoodCounts = userData['moodCounts'] ?? {};
       int currentStreak = userData['currentStreak'] ?? 0;
-      
-      // --- XỬ LÝ LOGIC TÍNH TOÁN MỚI ---
-      
-      // a. Tăng tổng số lần check-in
-      int newTotal = currentTotal + 1;
 
-      // b. Cập nhật số lượng từng loại cảm xúc
-      // VD: "Vui": 5 -> "Vui": 6
-      String moodLabel = checkIn.moodLabel;
-      if (currentMoodCounts.containsKey(moodLabel)) {
-        currentMoodCounts[moodLabel] = currentMoodCounts[moodLabel] + 1;
+      // --- LOGIC TÍNH TOÁN STREAK MỚI ---
+      DateTime now = DateTime.now();
+      int newStreak = currentStreak;
+
+      String? lastDateStr = userData['lastCheckInDate'];
+      if (lastDateStr == null) {
+        newStreak = 1; // Lần đầu tiên check-in
       } else {
-        currentMoodCounts[moodLabel] = 1;
+        DateTime lastDate = DateTime.parse(lastDateStr);
+        DateTime yesterday = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
+        DateTime todayStart = DateTime(now.year, now.month, now.day);
+
+        if (lastDate.isBefore(todayStart) && lastDate.isAfter(yesterday.subtract(const Duration(seconds: 1)))) {
+          // Check-in vào ngày hôm sau của ngày cuối -> Tăng streak
+          newStreak = currentStreak + 1;
+        } else if (lastDate.isBefore(yesterday)) {
+          // Đã quá 1 ngày không check-in -> Reset về 1
+          newStreak = 1;
+        }
+        // Nếu đã check-in trong hôm nay rồi thì giữ nguyên streak không cộng thêm
       }
 
-      // c. Tính Streak (Chuỗi ngày liên tục) - Logic đơn giản
-      // (Để đơn giản cho đồ án, ta cứ tăng streak lên 1 mỗi lần check-in, 
-      // nếu muốn xịn hơn phải so sánh ngày check-in cuối cùng)
-      int newStreak = currentStreak + 1; 
+      // Cập nhật Mood Counts
+      String moodLabel = checkIn.moodLabel;
+      currentMoodCounts[moodLabel] = (currentMoodCounts[moodLabel] ?? 0) + 1;
 
-      // 2. GHI DỮ LIỆU (WRITE)
-      
-      // a. Lưu check-in chi tiết vào sub-collection (kèm ID vừa sinh)
-      // Lưu ý: checkInRef.id là ID tự sinh của Firestore
-      transaction.set(checkInRef, checkIn.toMap()); 
-
-      // b. Cập nhật thống kê vào User Profile
+      // THỰC HIỆN GHI DỮ LIỆU
+      transaction.set(checkInRef, checkIn.toMap());
       transaction.update(userRef, {
-        'totalCheckins': newTotal,
+        'totalCheckins': currentTotal + 1,
         'moodCounts': currentMoodCounts,
         'currentStreak': newStreak,
-        'lastCheckInDate': DateTime.now().toIso8601String(), // Lưu lại ngày giờ check-in cuối
+        'lastCheckInDate': now.toIso8601String(),
       });
     });
+
+    // --- QUAN TRỌNG: HỦY THÔNG BÁO NHẮC 8H TỐI ---
+    // Vì người dùng đã check-in rồi nên tối nay không cần nhắc nữa
+    await FlutterLocalNotificationsPlugin().cancel(101);
   }
-  
-  // Hàm lấy danh sách lịch sử check-in (Stream - Tự động cập nhật)
+
+  // --- HÀM KIỂM TRA MẤT CHUỖI KHI MỞ APP ---
+  Future<void> checkAndNotifyStreakLoss(String userId) async {
+    final userRef = _firestore.collection('users').doc(userId);
+    final userDoc = await userRef.get();
+
+    if (!userDoc.exists) return;
+
+    Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+    String? lastDateStr = userData['lastCheckInDate'];
+    int currentStreak = userData['currentStreak'] ?? 0;
+
+    if (lastDateStr != null && currentStreak > 0) {
+      DateTime lastDate = DateTime.parse(lastDateStr);
+      DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
+      DateTime yesterdayStart = DateTime(yesterday.year, yesterday.month, yesterday.day);
+
+      // Nếu ngày cuối check-in còn trước cả ngày hôm qua -> Đã mất chuỗi
+      if (lastDate.isBefore(yesterdayStart)) {
+        // 1. Gửi thông báo chia buồn
+        await NotificationService().showStreakLostNotification();
+
+        // 2. Reset chuỗi về 0 trên database
+        await userRef.update({'currentStreak': 0});
+      }
+    }
+  }
+
   Stream<List<CheckInModel>> getCheckInHistory(String userId) {
     return _firestore
         .collection('users')
         .doc(userId)
         .collection('checkin_history')
-        .orderBy('timestamp', descending: true) // Mới nhất lên đầu
+        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        // Gọi hàm fromMap trong Model để chuyển đổi
-        return CheckInModel.fromMap(doc.data(), doc.id);
-      }).toList();
-    });
+        .map((snapshot) => snapshot.docs.map((doc) => CheckInModel.fromMap(doc.data(), doc.id)).toList());
   }
 }
