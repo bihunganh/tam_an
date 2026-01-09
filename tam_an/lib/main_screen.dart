@@ -4,7 +4,9 @@ import 'core/navigation/app_router.dart';
 import 'core/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
+import 'package:provider/provider.dart'; // Để dùng .read<UserProvider>
+import 'package:tam_an/core/services/checkin_service.dart'; // Để dùng CheckInService
+import 'package:tam_an/core/providers/user_provider.dart'; // Để dùng UserProvider
 import 'core/providers/user_provider.dart';
 import 'core/providers/theme_provider.dart'; // Thêm import này
 import 'features/user_profile/screens/profile_screen.dart';
@@ -42,7 +44,12 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = context.read<UserProvider>().user?.uid; // Hoặc cách bạn lấy userId
+      if (userId != null) {
+        CheckInService().checkAndNotifyStreakLoss(userId);
+      }
+    });
     if (widget.showLoginSuccess) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
