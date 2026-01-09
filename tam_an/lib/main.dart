@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Thêm để kiểm tra trạng thái login
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +50,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Khởi tạo UserProvider nhưng không gọi loadUser() ngay tại đây để tránh xung đột
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
@@ -61,7 +60,8 @@ void main() async {
 
 class TamAnApp extends StatelessWidget {
   final bool showOnboarding;
-  static const Color peachColor = Color(0xFFFF8A65); // Mã màu cam đào chủ đạo
+  // Mã màu cam đào chủ đạo đồng bộ với các màn hình khác
+  static const Color peachColor = Color(0xFFFF8A65);
 
   const TamAnApp({super.key, required this.showOnboarding});
 
@@ -73,12 +73,12 @@ class TamAnApp extends StatelessWidget {
       title: 'Tâm An',
       debugShowCheckedModeBanner: false,
 
-      // --- THEME SÁNG (Tone Cam đào chuyên nghiệp) ---
+      // --- THEME SÁNG ---
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: true,
         fontFamily: 'Roboto',
-        scaffoldBackgroundColor: const Color(0xFFFFF9F7), // Nền cam cực nhạt
+        scaffoldBackgroundColor: const Color(0xFFFFF9F7),
         colorScheme: ColorScheme.light(
           primary: peachColor,
           secondary: peachColor.withOpacity(0.7),
@@ -95,13 +95,13 @@ class TamAnApp extends StatelessWidget {
         ),
       ),
 
-      // --- THEME TỐI (Giữ nguyên phong cách Midnight) ---
+      // --- THEME TỐI ---
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
         scaffoldBackgroundColor: AppColors.midnightBlue,
         colorScheme: ColorScheme.dark(
-          primary: peachColor, // Dùng cam đào làm điểm nhấn cho chế độ tối
+          primary: peachColor,
           secondary: AppColors.darkAccent,
           surface: AppColors.darkSurface,
           onPrimary: Colors.white,
@@ -111,31 +111,32 @@ class TamAnApp extends StatelessWidget {
 
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
 
-      // --- XỬ LÝ LUỒNG ĐIỀU HƯỚNG TỰ ĐỘNG ---
+      // --- ĐIỀU HƯỚNG TỰ ĐỘNG ---
       home: showOnboarding
           ? const OnboardingScreen()
           : StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          // Nếu đang kiểm tra trạng thái login
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator(color: peachColor)));
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator(color: peachColor)),
+            );
           }
 
-          // Nếu đã đăng nhập (User != null)
           if (snapshot.hasData) {
-            // Gọi load dữ liệu Profile từ Provider
+            // Đã đăng nhập: Nạp dữ liệu và hiện màn hình chính CÓ NavBar
             context.read<UserProvider>().loadUser();
-            return const MainScreen();
+            return const MainScreen(showNavBar: true);
           }
 
-          // Nếu chưa đăng nhập hoặc đã đăng xuất
+          // Chưa đăng nhập
           return const LoginScreen();
         },
       ),
 
       routes: {
-        '/home': (context) => const MainScreen(showNavBar: false),
+        // SỬA TẠI ĐÂY: showNavBar phải là true để hiện thanh công cụ
+        '/home': (context) => const MainScreen(showNavBar: true),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
       },

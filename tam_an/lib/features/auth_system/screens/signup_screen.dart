@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // Thêm hiệu ứng cho mượt mà
 
 import '../../../../core/constants/app_colors.dart';
 import 'sign_in.dart';
@@ -45,7 +46,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  // --- LOGIC ĐĂNG KÝ MỚI ---
+  // Sửa lỗi: Đảm bảo khi quay về Home vẫn hiện NavBar
+  void _navigateToHome() {
+    AppRouter.pushAndRemoveUntil(
+        context,
+        const MainScreen(showNavBar: true) // Đổi từ false thành true
+    );
+  }
+
+  // --- LOGIC ĐĂNG KÝ ---
   Future<void> _handleSignUp(ThemeData theme) async {
     final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
@@ -53,19 +62,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final confirmPassword = _confirmPasswordController.text.trim();
     final dob = _dobController.text.trim();
 
-    // 1. Validate nhanh
     if (username.isEmpty || email.isEmpty || password.isEmpty || dob.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin!"), behavior: SnackBarBehavior.floating)
+      );
       return;
     }
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mật khẩu nhập lại không khớp!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Mật khẩu không khớp!"), behavior: SnackBarBehavior.floating)
+      );
       return;
     }
 
     FocusScope.of(context).unfocus();
 
-    // 2. Hiện Loading
+    // Hiện Loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -74,8 +86,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       final authService = AuthService();
-
-      // Thực hiện đăng ký
       String? error = await authService.signUp(
         email: email,
         password: password,
@@ -89,15 +99,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       Navigator.pop(context); // Tắt loading
 
       if (error == null) {
-        // --- QUAN TRỌNG: NẠP DỮ LIỆU USER VÀO PROVIDER TRƯỚC KHI CHUYỂN MÀN ---
+        // Nạp dữ liệu user vào Provider
         await Provider.of<UserProvider>(context, listen: false).loadUser();
 
         if (!mounted) return;
 
-        // Chuyển thẳng vào màn hình chính với thông báo thành công
+        // Chuyển vào MainScreen và HIỆN NavBar
         AppRouter.pushAndRemoveUntil(
             context,
-            const MainScreen(showNavBar: false, showLoginSuccess: true)
+            const MainScreen(showNavBar: true, showLoginSuccess: true) // Đảm bảo là true
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -109,13 +119,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi hệ thống: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
       }
     }
   }
 
   // --- UI COMPONENTS ---
-
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? file = await _picker.pickImage(source: source, maxWidth: 800, imageQuality: 85);
@@ -154,17 +163,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: CustomAppBar(onLogoTap: () => AppRouter.pushAndRemoveUntil(context, const MainScreen())),
+      appBar: CustomAppBar(onLogoTap: _navigateToHome),
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
+              const SizedBox(height: 10),
+              // Nút quay lại
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _navigateToHome,
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.grey),
+                  label: const Text("Về trang chủ", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                ),
+              ).animate().fadeIn(duration: 500.ms),
+
               const SizedBox(height: 20),
-              _buildAvatarSection(theme),
+              _buildAvatarSection(theme).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
               const SizedBox(height: 20),
-              _buildFormCard(theme),
+              _buildFormCard(theme).animate().fadeIn(delay: 200.ms, duration: 600.ms),
               const SizedBox(height: 40),
             ],
           ),
@@ -184,6 +204,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: peachColor, width: 2),
+              boxShadow: [BoxShadow(color: peachColor.withOpacity(0.2), blurRadius: 15)],
             ),
             child: CircleAvatar(
               radius: 50,
@@ -226,10 +247,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           _buildTextField(theme, controller: _confirmPasswordController, hint: "Nhập lại mật khẩu", icon: Icons.lock_reset, isPassword: true),
           const SizedBox(height: 16),
           _buildTextField(theme, controller: _dobController, hint: "Ngày sinh", icon: Icons.calendar_today, readOnly: true, onTap: () => _selectDate(context, theme)),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
-          const Align(alignment: Alignment.centerLeft, child: Text("Giới tính", style: TextStyle(fontWeight: FontWeight.bold))),
-          const SizedBox(height: 10),
+          const Align(alignment: Alignment.centerLeft, child: Text("Giới tính", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -238,7 +259,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _buildGenderChip("Khác"),
             ],
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 35),
 
           SizedBox(
             width: double.infinity,
@@ -248,7 +269,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: peachColor,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
+                elevation: 4,
+                shadowColor: peachColor.withOpacity(0.4),
               ),
               child: const Text("ĐĂNG KÝ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
@@ -256,7 +278,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
           const SizedBox(height: 15),
           TextButton(
             onPressed: () => AppRouter.pushReplacement(context, const LoginScreen()),
-            child: const Text("Đã có tài khoản? Đăng nhập ngay", style: TextStyle(color: Colors.grey)),
+            child: RichText(
+                text: const TextSpan(
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                    children: [
+                      TextSpan(text: "Đã có tài khoản? "),
+                      TextSpan(text: "Đăng nhập ngay", style: TextStyle(color: peachColor, fontWeight: FontWeight.bold)),
+                    ]
+                )
+            ),
           )
         ],
       ),
@@ -272,7 +302,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         filled: true,
         fillColor: theme.brightness == Brightness.dark ? Colors.white10 : Colors.grey[50],
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: peachColor)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: peachColor, width: 1.5)),
       ),
     );
   }
@@ -282,11 +312,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return GestureDetector(
       onTap: () => setState(() => _selectedGender = label),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? peachColor : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: isSelected ? peachColor : Colors.grey.withOpacity(0.3)),
+          boxShadow: isSelected ? [BoxShadow(color: peachColor.withOpacity(0.2), blurRadius: 8)] : null,
         ),
         child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)),
       ),
@@ -295,7 +326,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _selectDate(BuildContext context, ThemeData theme) async {
     final DateTime? picked = await showDatePicker(
-      context: context, initialDate: DateTime(2000), firstDate: DateTime(1900), lastDate: DateTime.now(),
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: ColorScheme.light(primary: peachColor, onPrimary: Colors.white, onSurface: Colors.black87),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) setState(() => _dobController.text = DateFormat('dd/MM/yyyy').format(picked));
   }
